@@ -203,29 +203,47 @@
     "last_name": "Малыхин",
     "first_name": "Сергей",
     "total_questions": 10,
-    "correct_count": 7,
-    "incorrect_count": 3,
-    "start_time": "2026-05-06T15:13:54.455653",
-    "end_time": "2026-05-06T15:15:37.063764",
-    "duration_seconds": 102.608111,
+    "correct_count": 10,
+    "incorrect_count": 0,
+    "start_time": "2026-05-07T16:24:30.996703",
+    "end_time": "2026-05-07T16:28:18.533462",
+    "duration_seconds": 227.536759,
     "details": [
       {
-        "question_id": "q07",
-        "question": "Может ли менеджер принять решение об отгрузке без полной оплаты?",
+        "question_id": 170,
+        "question": "Сколько рабочих дней даётся на загрузку сканов закрывающих документов по доставке?",
         "type": "single_choice",
         "correct": true,
-        "user_answer": "0",
+        "user_answer": "2",
         "correct_answer": [
-          0
+          2
         ],
-        "explanation": "Регламент требует соответствия условиям."
+        "explanation": "5.1. Запуск заявки и отправка данных на архивную почту",
+        "reference": "п. 5.1",
+        "section_ref": "5.1"
       },
       {
-        "question_id": "q01",
-        "question": "Какие документы обязательны для запуска?",
+        "question_id": 73,
+        "question": "Сколько экземпляров УПД выдаётся при регулярном варианте?",
+        "type": "single_choice",
+        "correct": true,
+        "user_answer": "2",
+        "correct_answer": [
+          2
+        ],
+        "explanation": "Вариант 2. Регулярный",
+        "reference": "п. 8.2 (Вариант 2. Регулярный)",
+        "section_ref": "8.2"
+      },
+      {
+        "question_id": 3,
+        "question": "Что обязательно указывается в сообщении при запросе счёта в чате «Бухгалтерия»?",
         "type": "multiple_choice",
-        "correct": false,
+        "correct": true,
         "user_answer": [
+          "0",
+          "1",
+          "2",
           "3"
         ],
         "correct_answer": [
@@ -234,101 +252,96 @@
           2,
           3
         ],
-        "explanation": "Все четыре."
+        "explanation": "2.1. Запрос счёта в бухгалтерии",
+        "reference": "п. 2.1",
+        "section_ref": "2.1"
       },
       {
-        "question_id": "q12",
-        "question": "Какие документы загружаются перед запуском заявки с учетом замены счета?",
-        "type": "multiple_choice",
-        "correct": false,
-        "user_answer": [
-          "0",
-          "1"
-        ],
-        "correct_answer": [
-          0,
-          1,
-          2,
-          3
-        ],
-        "explanation": "Актуальные версии."
-      },
-      {
-        "question_id": "q11",
-        "question": "Можно ли менять УПД больше двух раз?",
-        "type": "single_choice",
-        "correct": true,
-        "user_answer": "0",
-        "correct_answer": [
-          0
-        ],
-        "explanation": "Каждое последующее изменение – новая служебная записка."
-      },
-      {
-        "question_id": "q14",
-        "question": "Что является подтверждением правильности оформления УПД со стороны покупателя?",
-        "type": "single_choice",
-        "correct": true,
-        "user_answer": "2",
-        "correct_answer": [
-          2
-        ],
-        "explanation": "Лицо, подписывающее графу 18, считается ответственным."
-      },
-      {
-        "question_id": "q06",
-        "question": "Что будет с первоначальным счетом?",
-        "type": "single_choice",
-        "correct": false,
-        "user_answer": "1",
-        "correct_answer": [
-          0
-        ],
-        "explanation": "Не меняется."
-      },
-      {
-        "question_id": "q04",
-        "question": "Что обязательно нужно приложить к отгрузке?",
-        "type": "single_choice",
-        "correct": true,
-        "user_answer": "0",
-        "correct_answer": [
-          0
-        ],
-        "explanation": "Регламент: использовать опциональный вариант с приложением письма на архивную почту с объяснением."
-      },
-      {
-        "question_id": "q10",
-        "question": "Может ли ликвидатор подписывать договор без устава?",
-        "type": "single_choice",
-        "correct": true,
-        "user_answer": "0",
-        "correct_answer": [
-          0
-        ],
-        "explanation": "Ликвидатор действует на основании закона."
-      },
-      {
-        "question_id": "q13",
-        "question": "Если у водителя доверенность подписана руководителем, но без печати организации на самой доверенности, допустимо ли?",
-        "type": "single_choice",
-        "correct": true,
-        "user_answer": "0",
-        "correct_answer": [
-          0
-        ],
-        "explanation": "Доверенность от организации должна иметь печать."
-      },
-      {
-        "question_id": "q03",
-        "question": "Можно ли использовать опциональный вариант в этой ситуации?",
+        "question_id": 109,
+        "question": "При нашей доставке менеджер должен запросить:",
         "type": "single_choice",
         "correct": true,
         "user_answer": "1",
         "correct_answer": [
           1
         ],
-        "explanation": "Опциональный вариант также требует заполненной доверенности по нашей форме, и запрет на подписанта без прав остаётся."
+        "explanation": "4.3. Организация отгрузки товара / выполнения работ",
+        "reference": "п. 4.3",
+        "section_ref": "4.3"
+      },
+      {
+        "question_id": 125,
+        "question": "Разрешена ли отгрузка, если доверенность на водителя от клиента подписана главным бухгалтером, и у него есть доверенность на право подписи?",
+        "type": "single_choice",
+        "correct": true,
+        "user_answer": "0",
+        "correct_answer": [
+          0
+        ],
+        "explanation": "Важные предупреждения: доверенность может быть подписана другим лицом при наличии приказа/доверенности на право подписи",
+        "reference": "п. 8.2 (Важные предупреждения: доверенность может быть подписана другим лицом при наличии приказа/доверенности на право подписи)",
+        "section_ref": "8.2"
+      },
+      {
+        "question_id": 167,
+        "question": "Куда менеджер переносит данные из счёта при работе со счет-договором?",
+        "type": "single_choice",
+        "correct": true,
+        "user_answer": "1",
+        "correct_answer": [
+          1
+        ],
+        "explanation": "2.2. Порядок работы со счет-договором",
+        "reference": "п. 2.2",
+        "section_ref": "2.2"
+      },
+      {
+        "question_id": 44,
+        "question": "Если таблицу из АвтоКП сформировать невозможно, менеджер ничего не отправляет, ограничиваясь текстом.",
+        "type": "true_false",
+        "correct": true,
+        "user_answer": "false",
+        "correct_answer": false,
+        "explanation": "вручную составляется список комплектующих по форме",
+        "reference": "п. 5.1 (вручную составляется список комплектующих по форме)",
+        "section_ref": "5.1"
+      },
+      {
+        "question_id": 14,
+        "question": "Бланк заявки по форме производства можно не делать, если работа не отличается от типовой.",
+        "type": "true_false",
+        "correct": true,
+        "user_answer": "false",
+        "correct_answer": false,
+        "explanation": "Бланк заявки по форме производства: Необходимо делать, даже если работа не отличается от типовой",
+        "reference": "п. 2.3 (Бланк заявки по форме производства: Необходимо делать, даже если работа не отличается от типовой)",
+        "section_ref": "2.3"
+      },
+      {
+        "question_id": 120,
+        "question": "Если изменения счёта инициированы нашей компанией, письмо клиенту направляется:",
+        "type": "single_choice",
+        "correct": true,
+        "user_answer": "1",
+        "correct_answer": [
+          1
+        ],
+        "explanation": "п. 6",
+        "reference": "п. 6",
+        "section_ref": null
+      },
+      {
+        "question_id": 194,
+        "question": "Кто отправляет на архивную почту информацию о монтаже?",
+        "type": "single_choice",
+        "correct": true,
+        "user_answer": "1",
+        "correct_answer": [
+          1
+        ],
+        "explanation": "всё, что касается поставки и монтажа – зона ответственности менеджера",
+        "reference": "п. 5.1 (всё, что касается поставки и монтажа – зона ответственности менеджера)",
+        "section_ref": "5.1"
       }
     ]
   },
@@ -336,151 +349,146 @@
     "last_name": "Малыхин",
     "first_name": "Сергей",
     "total_questions": 10,
-    "correct_count": 5,
-    "incorrect_count": 5,
-    "start_time": "2026-05-06T15:34:07.055840",
-    "end_time": "2026-05-06T15:36:34.442527",
-    "duration_seconds": 147.386687,
+    "correct_count": 3,
+    "incorrect_count": 7,
+    "start_time": "2026-05-07T17:02:26.621134",
+    "end_time": "2026-05-07T17:03:00.775235",
+    "duration_seconds": 34.154101,
     "details": [
       {
-        "question_id": 45,
-        "question": "Какие обязательные реквизиты должны содержаться в любом документе согласно регламенту?",
-        "type": "multiple_choice",
-        "correct": false,
-        "user_answer": [
-          "0",
-          "1",
-          "2",
-          "3",
-          "4"
-        ],
-        "correct_answer": [
-          0,
-          1,
-          2,
-          4
-        ],
-        "explanation": ""
-      },
-      {
-        "question_id": 52,
-        "question": "Согласно обновленному регламенту, служебная записка на изменение УПД подается лично Алексею (а не Директору по развитию).",
+        "question_id": 171,
+        "question": "Письмо с темой «перенос отгрузки, актуализация даты» позволяет изменить дату УПД без служебной записки один раз.",
         "type": "true_false",
         "correct": true,
         "user_answer": "true",
         "correct_answer": true,
-        "explanation": ""
+        "explanation": "8.1. Составление УПД",
+        "reference": "п. 8.1",
+        "section_ref": "8.1"
       },
       {
-        "question_id": 24,
-        "question": "Порядок действий при замене оплаченного счета по ошибке нашей компании.",
+        "question_id": 177,
+        "question": "Что является основанием для признания счёта недействительным по инициативе компании?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": "2",
+        "correct_answer": [
+          1
+        ],
+        "explanation": "п. 6",
+        "reference": "п. 6",
+        "section_ref": null
+      },
+      {
+        "question_id": 52,
+        "question": "В какой срок сканы закрывающих документов по доставке должны быть загружены на Битрикс-Диск после исполнения обязательств?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": "1",
+        "correct_answer": [
+          2
+        ],
+        "explanation": "5.1. Запуск заявки и отправка данных на архивную почту",
+        "reference": "п. 5.1",
+        "section_ref": "5.1"
+      },
+      {
+        "question_id": 41,
+        "question": "Расставьте элементы темы письма в правильном порядке (как указано в регламенте):",
         "type": "ordering",
         "correct": false,
         "user_answer": [
-          2,
+          1,
           0,
-          1
+          2
+        ],
+        "correct_answer": [
+          "« № счёта на поставку, оплаченного клиентом, № заявки в производстве »"
+        ],
+        "explanation": "тема: «№ счёта на поставку, оплаченного клиентом, № заявки в производстве»",
+        "reference": "п. 5.1 (тема: «№ счёта на поставку, оплаченного клиентом, № заявки в производстве»)",
+        "section_ref": "5.1"
+      },
+      {
+        "question_id": 96,
+        "question": "Какие действия выполняются после проверки юристом договора?",
+        "type": "multiple_choice",
+        "correct": false,
+        "user_answer": [
+          "0",
+          "2"
         ],
         "correct_answer": [
           0,
           1,
           2
         ],
-        "explanation": ""
+        "explanation": "3.2. Подписание и хранение договора",
+        "reference": "п. 3.2",
+        "section_ref": "3.2"
       },
       {
-        "question_id": 85,
-        "question": "В какой лоток помещаются документы, которые не требуют дополнительных действий после передачи в бухгалтерию?",
-        "type": "single_choice",
-        "correct": false,
-        "user_answer": "1",
-        "correct_answer": [
-          0
-        ],
-        "explanation": ""
-      },
-      {
-        "question_id": 62,
-        "question": "Какие данные о доставке необходимо указывать в архивном письме?",
-        "type": "multiple_choice",
-        "correct": false,
-        "user_answer": [
-          "0",
-          "1",
-          "2"
-        ],
-        "correct_answer": [
-          0,
-          1
-        ],
-        "explanation": ""
-      },
-      {
-        "question_id": 26,
-        "question": "Через сколько рабочих дней после отправки архивного письма бухгалтерия и юротдел должны подтвердить корректность?",
-        "type": "single_choice",
-        "correct": true,
-        "user_answer": "1",
-        "correct_answer": [
-          1
-        ],
-        "explanation": ""
-      },
-      {
-        "question_id": 94,
-        "question": "Какие действия относятся к зоне ответственности менеджера?",
-        "type": "multiple_choice",
-        "correct": true,
-        "user_answer": [
-          "0",
-          "1",
-          "4"
-        ],
-        "correct_answer": [
-          0,
-          1,
-          4
-        ],
-        "explanation": ""
-      },
-      {
-        "question_id": 43,
-        "question": "При невозможности формирования таблицы АвтоКП, менеджер должен в теле письма вручную составить список комплектующих по форме: наименование, количество, цена по прайсу, цена в счете, разница.",
+        "question_id": 165,
+        "question": "В ручном списке комплектующих не нужно указывать разницу в рублях между ценой прайса и ценой в счёте.",
         "type": "true_false",
         "correct": true,
-        "user_answer": "true",
-        "correct_answer": true,
-        "explanation": ""
+        "user_answer": "false",
+        "correct_answer": false,
+        "explanation": "форма: *цена по прайсу*, *цена в счете*, *разница в рублях*",
+        "reference": "п. 5.1 (форма: *цена по прайсу*, *цена в счете*, *разница в рублях*)",
+        "section_ref": "5.1"
       },
       {
         "question_id": 18,
-        "question": "Что должен сделать менеджер, если документ является приложением к договору и клиент просит изменить его содержание письмом?",
+        "question": "Какой источник используется для уточнения должности руководителя контрагента?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": "1",
+        "correct_answer": [
+          2
+        ],
+        "explanation": "3.1. Подготовка договора",
+        "reference": "п. 3.1",
+        "section_ref": "3.1"
+      },
+      {
+        "question_id": 181,
+        "question": "Что из перечисленного НЕ является обязательным реквизитом документа?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": "3",
+        "correct_answer": [
+          2
+        ],
+        "explanation": "3.3. Важные замечания к оформлению документов",
+        "reference": "п. 3.3",
+        "section_ref": "3.3"
+      },
+      {
+        "question_id": 174,
+        "question": "Что обязательно проверяется в поступившей оплате?",
         "type": "single_choice",
         "correct": true,
         "user_answer": "1",
         "correct_answer": [
           1
         ],
-        "explanation": ""
+        "explanation": "4.1. Контроль оплаты",
+        "reference": "п. 4.1",
+        "section_ref": "4.1"
       },
       {
-        "question_id": 82,
-        "question": "Какие данные об УПД необходимо указать при подаче служебной записки на изменение?",
-        "type": "multiple_choice",
+        "question_id": 88,
+        "question": "Куда помещаются документы, не требующие дополнительных действий после передачи в бухгалтерию?",
+        "type": "single_choice",
         "correct": false,
-        "user_answer": [
-          "0",
-          "1",
-          "2"
-        ],
+        "user_answer": "2",
         "correct_answer": [
-          0,
-          1,
-          2,
-          3,
-          4
+          0
         ],
-        "explanation": ""
+        "explanation": "7.3. Процесс физической передачи",
+        "reference": "п. 7.3",
+        "section_ref": "7.3"
       }
     ]
   },
@@ -490,112 +498,80 @@
     "total_questions": 15,
     "correct_count": 0,
     "incorrect_count": 15,
-    "start_time": "2026-05-06T17:41:12.867043",
-    "end_time": "2026-05-06T17:41:27.076300",
-    "duration_seconds": 14.209257,
+    "start_time": "2026-05-07T17:41:47.068995",
+    "end_time": "2026-05-07T17:41:53.150082",
+    "duration_seconds": 6.081087,
     "details": [
       {
         "question_id": "q01",
-        "question": "Какое письмо должен направить клиент?",
+        "question": "Какой документ следует использовать для оформления сделки?",
         "type": "single_choice",
         "correct": false,
         "user_answer": null,
         "correct_answer": [
           0
         ],
-        "explanation": "Клиент обязан направить письмо с конкретными позициями (Инструкция, п.2)."
+        "explanation": "Сумма ≤ 100 000, предмет только поставка и самовывоз. Счёт-договор допустим (раздел «Порядок работы со счёт-договором»).",
+        "reference": "п. 2.3",
+        "section_ref": "2.3"
       },
       {
         "question_id": "q02",
-        "question": "Что делает менеджер после получения такого письма?",
+        "question": "Нужно ли при запросе счёта в бухгалтерии прикладывать карточку организации?",
         "type": "single_choice",
         "correct": false,
         "user_answer": null,
         "correct_answer": [
-          1
+          0
         ],
-        "explanation": "При добавлении позиций выставляется дополнительный счёт с новым номером и текущей датой."
+        "explanation": "Регламент: «Если первично выставляется счёт для данного клиента, приложить карточку организации с реквизитами».",
+        "reference": "п. 7.2",
+        "section_ref": "7.2"
       },
       {
         "question_id": "q03",
-        "question": "Меняется ли первоначальный счёт?",
-        "type": "single_choice",
+        "question": "Какие файлы обязательно прикрепить к запросу счёта? (выберите все подходящие)",
+        "type": "multiple_choice",
         "correct": false,
-        "user_answer": null,
+        "user_answer": [],
         "correct_answer": [
-          1
+          0,
+          1,
+          3
         ],
-        "explanation": "Первоначальные характеристики не меняются, выставляется дополнительный счёт."
+        "explanation": "В запросе требуются расширенный счёт, стандартный счёт и, для первичного клиента, карточка организации.",
+        "reference": "п. 3.3",
+        "section_ref": "3.3"
       },
       {
         "question_id": "q04",
-        "question": "Нужно ли аннулировать предыдущий счёт?",
+        "question": "Нужно ли делать и подписывать бланк заявки к счёт-договору?",
         "type": "single_choice",
         "correct": false,
         "user_answer": null,
         "correct_answer": [
           1
         ],
-        "explanation": "Предыдущий счёт действителен, просто добавляется новый."
+        "explanation": "Прямое указание регламента: «Не требуется: Делать и подписывать бланк заявки к счёт-договору».",
+        "reference": "п. 2.2",
+        "section_ref": "2.2"
       },
       {
         "question_id": "q05",
-        "question": "Должна ли сумма дополнительного счёта учитываться в ограничении 100 000 руб. для счёт-договора?",
+        "question": "Обязан ли менеджер составить бланк заявки по форме производства для этой сделки?",
         "type": "single_choice",
         "correct": false,
         "user_answer": null,
         "correct_answer": [
           0
         ],
-        "explanation": "Сумма всей сделки не должна превышать 100 000 для использования счёт-договора."
+        "explanation": "Регламент: «Бланк заявки по форме производства: Необходимо делать, даже если работа не отличается от типовой».",
+        "reference": "п. 2.1",
+        "section_ref": "2.1"
       },
       {
         "question_id": "q06",
-        "question": "Кто инициирует изменение при добавлении позиций?",
-        "type": "single_choice",
-        "correct": false,
-        "user_answer": null,
-        "correct_answer": [
-          0
-        ],
-        "explanation": "Изменения инициированы клиентом."
-      },
-      {
-        "question_id": "q07",
-        "question": "Какая дата ставится на дополнительном счёте?",
-        "type": "single_choice",
-        "correct": false,
-        "user_answer": null,
-        "correct_answer": [
-          1
-        ],
-        "explanation": "Текущей датой, согласно инструкции."
-      },
-      {
-        "question_id": "q08",
-        "question": "Нужно ли заново подписывать счёт-договор с клиентом?",
-        "type": "single_choice",
-        "correct": false,
-        "user_answer": null,
-        "correct_answer": [
-          1
-        ],
-        "explanation": "Первоначальный счёт-договор остаётся, дополнительный счёт не требует нового основного договора, но может потребоваться доп. соглашение."
-      },
-      {
-        "question_id": "q09",
-        "question": "Влияет ли добавление позиций на срок отправки архивного письма?",
-        "type": "single_choice",
-        "correct": false,
-        "user_answer": null,
-        "correct_answer": [
-          1
-        ],
-        "explanation": "Срок 5 рабочих дней отсчитывается от запуска первоначальной заявки."
-      },
-      {
-        "question_id": "q10",
-        "question": "Какие документы должны быть загружены на Битрикс перед запуском обновлённой заявки?",
+        "question": "Какие документы должны быть загружены на Битрикс-диск перед запуском заявки в производство? (выберите все)",
         "type": "multiple_choice",
         "correct": false,
         "user_answer": [],
@@ -605,66 +581,126 @@
           2,
           3
         ],
-        "explanation": "Весь комплект с учётом обоих счетов."
+        "explanation": "Регламент контроля документооборота: перед запуском должны быть договор, счёт стандартный, счёт расширенный и подписанная заявка.",
+        "reference": "п. 3.3",
+        "section_ref": "3.3"
+      },
+      {
+        "question_id": "q07",
+        "question": "В какой срок после запуска заявки менеджер должен отправить письмо на archivezmdd@gmail.com?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": null,
+        "correct_answer": [
+          1
+        ],
+        "explanation": "Регламент: «не позднее 5 РАБОЧИХ дней с момента запуска заявки в производство».",
+        "reference": "п. 4.1",
+        "section_ref": "4.1"
+      },
+      {
+        "question_id": "q08",
+        "question": "Клиент оплатил счёт полностью. Нужно ли указывать отклонения в письме на архивную почту?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": null,
+        "correct_answer": [
+          1
+        ],
+        "explanation": "Отклонения (неполная оплата, неподписанный договор) указываются только при их наличии.",
+        "reference": "п. 3.3",
+        "section_ref": "3.3"
+      },
+      {
+        "question_id": "q09",
+        "question": "Кто должен забирать товар, чтобы можно было применить предпочтительный вариант подписания УПД?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": null,
+        "correct_answer": [
+          1
+        ],
+        "explanation": "Предпочтительный вариант: руководитель или иное уполномоченное лицо с правом подписи (раздел «Регламент составления УПД»).",
+        "reference": "п. 8.2",
+        "section_ref": "8.2"
+      },
+      {
+        "question_id": "q10",
+        "question": "Если товар забирает лично руководитель организации с печатью, какую строку УПД необходимо заполнить кроме 15 и 18?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": null,
+        "correct_answer": [
+          1
+        ],
+        "explanation": "Заполняются строки 15, 18 (должность, подпись, Ф.И.О.), 16 (дата приёмки) и 19 (синяя печать).",
+        "reference": "п. 8.1",
+        "section_ref": "8.1"
       },
       {
         "question_id": "q11",
-        "question": "Что если технически невозможно добавить запрошенные позиции?",
-        "type": "single_choice",
+        "question": "Верно ли утверждение: «При использовании счёт-договора наименование в счёте может отличаться от наименования в счёт-договоре»?",
+        "type": "true_false",
         "correct": false,
         "user_answer": null,
-        "correct_answer": [
-          1
-        ],
-        "explanation": "Инструкция: «Если технически это возможно, то ...», иначе отказ."
+        "correct_answer": false,
+        "explanation": "Регламент: «Наименование в счёте должно полностью отражать комплектацию двери и быть идентичным со счёт-договором».",
+        "reference": "п. 2.3",
+        "section_ref": "2.3"
       },
       {
         "question_id": "q12",
-        "question": "Можно ли добавить позиции без письма от клиента?",
+        "question": "К какому блоку регламента относится требование «Сумма сделки не должна превышать 100 000 рублей»?",
         "type": "single_choice",
         "correct": false,
         "user_answer": null,
         "correct_answer": [
           1
         ],
-        "explanation": "Регламент требует письменного запроса от клиента."
+        "explanation": "Это условие из раздела «Порядок работы со счёт-договором».",
+        "reference": "п. 2.3",
+        "section_ref": "2.3"
       },
       {
         "question_id": "q13",
-        "question": "Нужно ли ставить пометку «ИП» в теме писем для ООО?",
+        "question": "Нужно ли к письму со счёт-договором прикладывать текстовые пояснения о дополнительных нюансах, если они есть?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": null,
+        "correct_answer": [
+          0
+        ],
+        "explanation": "Регламент: «Все дополнительные нюансы, которые пишутся текстом, должны быть применены к письму вместе со счёт-договором».",
+        "reference": "п. 2.3",
+        "section_ref": "2.3"
+      },
+      {
+        "question_id": "q14",
+        "question": "Что делать, если клиент после подписания счёт-договора попросил изменить цвет двери?",
+        "type": "single_choice",
+        "correct": false,
+        "user_answer": null,
+        "correct_answer": [
+          0
+        ],
+        "explanation": "При изменении характеристик по инициативе клиента выставляется новый счёт с тем же номером, но текущей датой (Инструкция по замене счёта, п.1).",
+        "reference": "п. 2.3",
+        "section_ref": "2.3"
+      },
+      {
+        "question_id": "q15",
+        "question": "Какая информация должна быть в письме юристу при проверке договора (тема)?",
         "type": "single_choice",
         "correct": false,
         "user_answer": null,
         "correct_answer": [
           1
         ],
-        "explanation": "Пометка «ИП» только для сделок с ИП."
-      },
-      {
-        "question_id": "q14",
-        "question": "Менеджер отправил архивное письмо, не указав новый дополнительный счёт. Это ошибка?",
-        "type": "single_choice",
-        "correct": false,
-        "user_answer": null,
-        "correct_answer": [
-          0
-        ],
-        "explanation": "В письме указываются все счета, включая дополнительный."
-      },
-      {
-        "question_id": "q15",
-        "question": "Через сколько рабочих дней после отправки архивного письма ожидается подтверждение?",
-        "type": "single_choice",
-        "correct": false,
-        "user_answer": null,
-        "correct_answer": [
-          0
-        ],
-        "explanation": "2 рабочих дня."
+        "explanation": "В теме письма юристу указывается от какой организации и название контрагента (раздел «Заключение сделки»).",
+        "reference": "п. 3.1",
+        "section_ref": "3.1"
       }
     ],
-    "test_type": "scenario",
-    "scenario_id": "S06",
-    "scenario_title": "Добавление позиций клиентом (сценарий замены счёта №2)"
+    "scenario_title": "Первичный ООО, поставка, 85 000 руб., самовывоз (счёт-договор)"
   }
 ]
