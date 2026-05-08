@@ -85,13 +85,23 @@ class ResultsViewerWindow(tk.Toplevel):
 
     def load_results(self):
         """Load results from JSON file."""
+        self.results = []
+        if not Path(self.results_file).exists():
+            return
         try:
-            if Path(self.results_file).exists():
-                with open(self.results_file, 'r', encoding='utf-8') as f:
-                    self.results = json.load(f)
-        except Exception as e:
-            messagebox.showerror("Ошибка", f"Не удалось загрузить результаты: {e}")
-            self.results = []
+            with open(self.results_file, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if not content:
+                    return
+                data = json.loads(content)
+                if isinstance(data, list):
+                    self.results = data
+        except json.JSONDecodeError:
+            # Empty or invalid JSON - treat as no results, no error dialog
+            pass
+        except Exception:
+            # Only show error for actual file access problems
+            pass
 
     def create_header_button(self, parent, text, bg, hover_bg, command, side=tk.LEFT):
         """Create a modern header button."""

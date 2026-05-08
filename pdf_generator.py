@@ -21,11 +21,15 @@ import os
 from pathlib import Path
 from datetime import datetime
 
+import sys
+sys.path.insert(0, str(Path(__file__).parent))
+from _utils import get_output_path
+
 
 def generate_pdf(result, reglament):
     """Generate PDF report from test results."""
     # Setup paths
-    output_dir = Path(__file__).parent / "results"
+    output_dir = get_output_path() / "results"
     output_dir.mkdir(exist_ok=True)
 
     # Create filename with timestamp

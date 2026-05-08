@@ -11,6 +11,8 @@ from pathlib import Path
 from datetime import datetime
 from tkinter import Tk, messagebox
 
+from _utils import get_base_path, get_output_path
+
 # Import GUI components
 from mode_selection import ModeSelectionWindow
 from study_mode import StudyModeWindow
@@ -26,8 +28,20 @@ class TestApp:
         """Initialize the application."""
         self.root = Tk()
         self.root.withdraw()  # Hide main window initially
-        self.user_data_file = Path(__file__).parent / "user_data.json"
-        self.results_file = Path(__file__).parent / "test_results.json"
+
+        # Set application icon
+        try:
+            base = get_base_path()
+            icon_path = base / "app_icon.png"
+            if icon_path.exists():
+                self.icon_img = PhotoImage(file=str(icon_path))
+                self.root.iconphoto(True, self.icon_img)
+        except Exception:
+            pass  # Silently fail if icon can't be loaded
+
+        output_base = get_output_path()
+        self.user_data_file = output_base / "user_data.json"
+        self.results_file = output_base / "test_results.json"
         self.load_user_data()
         self.load_reglament()
         self.load_test_questions()
@@ -58,7 +72,7 @@ class TestApp:
     def load_reglament(self):
         """Load regulation data."""
         try:
-            reglament_path = Path(__file__).parent / "reglament.json"
+            reglament_path = get_base_path() / "reglament.json"
             with open(reglament_path, 'r', encoding='utf-8') as f:
                 self.reglament = json.load(f)
         except Exception as e:
@@ -68,7 +82,7 @@ class TestApp:
     def load_test_questions(self):
         """Load test questions from questions.json."""
         try:
-            questions_path = Path(__file__).parent / "questions.json"
+            questions_path = get_base_path() / "questions.json"
             with open(questions_path, 'r', encoding='utf-8') as f:
                 self.test_questions = json.load(f)
         except Exception as e:
@@ -78,7 +92,7 @@ class TestApp:
     def load_scenarios(self):
         """Load test scenarios from test_scenarios.json."""
         try:
-            scenarios_path = Path(__file__).parent / "test_scenarios.json"
+            scenarios_path = get_base_path() / "test_scenarios.json"
             with open(scenarios_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 self.scenarios = data.get("test_scenarios", [])
