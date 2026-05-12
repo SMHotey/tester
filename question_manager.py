@@ -178,7 +178,7 @@ class QuestionEditDialog(tk.Toplevel):
         self.result = None  # Will hold the edited/created question on save
 
         self.title("Редактирование вопроса" if question else "Новый вопрос")
-        self.geometry("750x700")
+        self.geometry("950x750")
         self.configure(bg=Colors.BG)
         self.transient(parent)
         self.grab_set()
@@ -191,7 +191,7 @@ class QuestionEditDialog(tk.Toplevel):
 
     def center_window(self):
         self.update_idletasks()
-        w, h = 750, 700
+        w, h = 950, 750
         x = (self.winfo_screenwidth() - w) // 2
         y = (self.winfo_screenheight() - h) // 2
         self.geometry(f"{w}x{h}+{x}+{y}")
@@ -379,10 +379,10 @@ class QuestionEditDialog(tk.Toplevel):
         # For other types: merged options list + ordering section
         tk.Label(self.options_frame, text="Варианты ответов (нажмите ✎ чтобы изменить текст, нажмите на маркер чтобы отметить правильный):",
                  font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_PRIMARY, anchor=tk.W,
-                 wraplength=680, justify=tk.LEFT).pack(fill=tk.X, pady=(0, Spacing.SM))
+                 wraplength=850, justify=tk.LEFT).pack(fill=tk.X, pady=(0, Spacing.SM))
 
         # Scrollable container
-        opt_canvas = tk.Canvas(self.options_frame, bg=Colors.BG, highlightthickness=0, bd=0, height=150)
+        opt_canvas = tk.Canvas(self.options_frame, bg=Colors.BG, highlightthickness=0, bd=0, height=220)
         opt_scroll = tk.Scrollbar(self.options_frame, orient="vertical", command=opt_canvas.yview, bg=Colors.SURFACE)
         opt_inner = tk.Frame(opt_canvas, bg=Colors.BG)
 
@@ -463,32 +463,31 @@ class QuestionEditDialog(tk.Toplevel):
                                  bg=Colors.BG, fg=Colors.TEXT_SECONDARY, width=3)
             num_label.pack(side=tk.LEFT)
 
-        # Entry for option text
-        var = tk.StringVar(value=text)
-        entry_frame = tk.Frame(row, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0, height=30)
-        entry_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        entry_frame.pack_propagate(False)
+        # Text widget for option text (supports line wrapping)
+        text_frame = tk.Frame(row, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
+        text_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        entry = tk.Entry(
-            entry_frame, textvariable=var, font=Fonts.BODY,
+        text_widget = tk.Text(
+            text_frame, font=Fonts.BODY,
             bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY,
             relief=tk.FLAT, bd=0, insertbackground=Colors.PRIMARY,
-            state="readonly" if qtype != "ordering" else tk.NORMAL
+            height=2, wrap=tk.WORD, state=tk.NORMAL
         )
-        entry.pack(fill=tk.BOTH, expand=True, padx=Spacing.SM, pady=2)
+        text_widget.pack(fill=tk.BOTH, expand=True, padx=Spacing.SM, pady=2)
+        text_widget.insert("1.0", text)
 
-        def ef_in(e, f=entry_frame): f.configure(bg=Colors.PRIMARY)
-        def ef_out(e, f=entry_frame): f.configure(bg=Colors.BORDER_LIGHT)
-        entry.bind("<FocusIn>", ef_in)
-        entry.bind("<FocusOut>", ef_out)
+        def ef_in(e, f=text_frame): f.configure(bg=Colors.PRIMARY)
+        def ef_out(e, f=text_frame): f.configure(bg=Colors.BORDER_LIGHT)
+        text_widget.bind("<FocusIn>", ef_in)
+        text_widget.bind("<FocusOut>", ef_out)
 
-        # Edit button (click to toggle entry readonly state)
+        # Edit button (click to toggle text widget enabled state)
         edit_btn = tk.Button(
             row, text="✎", font=("Segoe UI", 9),
             bg=Colors.PRIMARY_BG, fg=Colors.PRIMARY,
             activebackground=Colors.PRIMARY, activeforeground=Colors.WHITE,
             relief=tk.FLAT, cursor="hand2", bd=0, padx=6, pady=0, width=3,
-            command=lambda i=idx, e=entry: self._toggle_edit(i, e)
+            command=lambda i=idx, t=text_widget: self._toggle_edit(i, t)
         )
         edit_btn.pack(side=tk.RIGHT, padx=(Spacing.XS, 0))
 
@@ -502,30 +501,30 @@ class QuestionEditDialog(tk.Toplevel):
         )
         del_btn.pack(side=tk.RIGHT, padx=(Spacing.XS, 0))
 
-        # Marker label stored as widget reference for updates
+        # Store: (row, text_widget, is_original, marker, edit_btn)
         if qtype in ("single_choice", "multiple_choice"):
-            self.option_entries.append((row, var, is_original, marker, entry, edit_btn))
+            self.option_entries.append((row, text_widget, is_original, marker, edit_btn))
         else:
-            self.option_entries.append((row, var, is_original, None, entry, edit_btn))
+            self.option_entries.append((row, text_widget, is_original, None, edit_btn))
 
         # Scroll to bottom
         self.opt_inner.update_idletasks()
         self.opt_canvas.yview_moveto(1.0)
 
-    def _toggle_edit(self, idx, entry):
-        """Toggle entry between readonly and editable."""
-        if entry.cget("state") == "readonly":
-            entry.configure(state=tk.NORMAL)
-            entry.focus_set()
-            entry.icursor(tk.END)
+    def _toggle_edit(self, idx, text_widget):
+        """Toggle text widget between disabled and editable."""
+        if text_widget.cget("state") == tk.DISABLED:
+            text_widget.configure(state=tk.NORMAL)
+            text_widget.focus_set()
+            text_widget.mark_set(tk.INSERT, "end")
         else:
-            entry.configure(state="readonly")
+            text_widget.configure(state=tk.DISABLED)
 
     def _mark_single(self, idx):
         """Mark option as correct for single_choice."""
         self.answer_single_var.set(idx)
         # Refresh markers
-        for i, (row, var, orig, marker, entry, edit_btn) in enumerate(self.option_entries):
+        for i, (row, tw, is_orig, marker, ebtn) in enumerate(self.option_entries):
             if marker:
                 is_c = (i == idx)
                 marker.configure(
@@ -542,7 +541,7 @@ class QuestionEditDialog(tk.Toplevel):
         var = self.answer_multi_vars[idx]
         var.set(not var.get())
         is_c = var.get()
-        row, _, _, marker, _, _ = self.option_entries[idx]
+        row, _, _, marker, _ = self.option_entries[idx]
         if marker:
             marker.configure(
                 text="☑" if is_c else "☐",
@@ -556,7 +555,7 @@ class QuestionEditDialog(tk.Toplevel):
             messagebox.showwarning("Внимание", "Должно быть минимум 2 варианта ответа")
             return
 
-        row, var, is_original, marker, entry, edit_btn = self.option_entries[idx]
+        row, tw, is_original, marker, ebtn = self.option_entries[idx]
 
         if is_original:
             if not messagebox.askyesno(
@@ -578,7 +577,7 @@ class QuestionEditDialog(tk.Toplevel):
             elif current > idx:
                 self.answer_single_var.set(current - 1)
             # Refresh markers
-            for i, (r, v, orig, m, e, eb) in enumerate(self.option_entries):
+            for i, (r, tw, orig, m, ebtn) in enumerate(self.option_entries):
                 if m:
                     is_c = (i == self.answer_single_var.get())
                     m.configure(text="●" if is_c else "○", fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY)
@@ -586,12 +585,12 @@ class QuestionEditDialog(tk.Toplevel):
         elif qtype == "multiple_choice":
             # Rebuild multi vars
             new_multi = {}
-            for i, (r, v, orig, m, e, eb) in enumerate(self.option_entries):
+            for i, (r, tw, orig, m, ebtn) in enumerate(self.option_entries):
                 old_idx = i if i < idx else i + 1  # approximate
                 if old_idx in self.answer_multi_vars:
                     new_multi[i] = self.answer_multi_vars[old_idx]
             self.answer_multi_vars = new_multi
-            for i, (r, v, orig, m, e, eb) in enumerate(self.option_entries):
+            for i, (r, tw, orig, m, ebtn) in enumerate(self.option_entries):
                 if m:
                     is_c = self.answer_multi_vars.get(i, tk.BooleanVar(value=False)).get()
                     m.configure(text="☑" if is_c else "☐", fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY)
@@ -644,7 +643,7 @@ class QuestionEditDialog(tk.Toplevel):
         if not hasattr(self, 'order_listbox'):
             return
         self.order_listbox.delete(0, tk.END)
-        options = [var.get().strip() for _, var, _, _, _, _ in self.option_entries if var.get().strip()]
+        options = [tw.get("1.0", "end-1c").strip() for _, tw, _, _, _ in self.option_entries if tw.get("1.0", "end-1c").strip()]
         for i, opt in enumerate(options):
             self.order_listbox.insert(tk.END, f"  {i+1}. {opt}")
         if self.order_listbox.size() > 0:
@@ -674,7 +673,7 @@ class QuestionEditDialog(tk.Toplevel):
 
     def _get_options_text(self):
         """Get current option texts."""
-        return [var.get().strip() for _, var, _, _, _, _ in self.option_entries if var.get().strip()]
+        return [tw.get("1.0", "end-1c").strip() for _, tw, _, _, _ in self.option_entries if tw.get("1.0", "end-1c").strip()]
 
     def _apply_correct_answer(self, q):
         """Apply the saved correct answer to the current option rows."""
@@ -687,7 +686,7 @@ class QuestionEditDialog(tk.Toplevel):
             if isinstance(correct, list):
                 correct = correct[0]
             self.answer_single_var.set(int(correct))
-            for i, (row, var, orig, marker, entry, edit_btn) in enumerate(self.option_entries):
+            for i, (row, tw, orig, marker, ebtn) in enumerate(self.option_entries):
                 if marker:
                     is_c = (i == int(correct))
                     marker.configure(text="●" if is_c else "○", fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY)
@@ -698,7 +697,7 @@ class QuestionEditDialog(tk.Toplevel):
             for idx in correct_list:
                 if int(idx) < len(self.option_entries):
                     self.answer_multi_vars[int(idx)] = tk.BooleanVar(value=True)
-            for i, (row, var, orig, marker, entry, edit_btn) in enumerate(self.option_entries):
+            for i, (row, tw, orig, marker, ebtn) in enumerate(self.option_entries):
                 if marker:
                     is_c = self.answer_multi_vars.get(i, tk.BooleanVar(value=False)).get()
                     marker.configure(text="☑" if is_c else "☐", fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY)
@@ -778,7 +777,7 @@ class QuestionEditDialog(tk.Toplevel):
             q["correct_answer"] = self.tf_var.get() == "true"
             q["options"] = []
         else:
-            options = [var.get().strip() for _, var, _, _, _, _ in self.option_entries if var.get().strip()]
+            options = [tw.get("1.0", "end-1c").strip() for _, tw, _, _, _ in self.option_entries if tw.get("1.0", "end-1c").strip()]
             if len(options) < 2:
                 messagebox.showwarning("Ошибка", "Добавьте минимум 2 варианта ответа")
                 return
@@ -792,7 +791,7 @@ class QuestionEditDialog(tk.Toplevel):
                 q["correct_answer"] = int(val)
 
             elif qtype == "multiple_choice":
-                selected = [i for i, (row, var, orig, marker, entry, edit_btn)
+                selected = [i for i, (row, tw, orig, marker, ebtn)
                            in enumerate(self.option_entries)
                            if self.answer_multi_vars.get(i, tk.BooleanVar(value=False)).get()]
                 if not selected:
