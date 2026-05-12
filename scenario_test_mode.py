@@ -502,13 +502,30 @@ class ScenarioTestModeWindow(tk.Toplevel):
             justify=tk.LEFT
         ).pack(fill=tk.X, pady=(0, Spacing.XL))
 
-        # Answer options frame
-        options_frame = tk.Frame(question_frame, bg=Colors.CARD_BG)
-        options_frame.pack(fill=tk.BOTH, expand=True)
+        # Answer options frame (scrollable for many options)
+        opt_container = tk.Frame(question_frame, bg=Colors.CARD_BG)
+        opt_container.pack(fill=tk.BOTH, expand=True)
+
+        opt_canvas = tk.Canvas(opt_container, bg=Colors.CARD_BG, highlightthickness=0, bd=0)
+        opt_scrollbar = ttk.Scrollbar(opt_container, orient="vertical", command=opt_canvas.yview)
+        opt_inner = tk.Frame(opt_canvas, bg=Colors.CARD_BG)
+
+        opt_inner.bind("<Configure>", lambda e: opt_canvas.configure(scrollregion=opt_canvas.bbox("all")))
+        opt_canvas.create_window((0, 0), window=opt_inner, anchor="nw")
+        opt_canvas.configure(yscrollcommand=opt_scrollbar.set)
+
+        opt_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        opt_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # Mousewheel scrolling
+        def _on_mousewheel(event):
+            opt_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        opt_canvas.bind("<Enter>", lambda e: opt_canvas.bind_all("<MouseWheel>", _on_mousewheel))
+        opt_canvas.bind("<Leave>", lambda e: opt_canvas.unbind_all("<MouseWheel>"))
 
         question_type = question_data.get("type", "single_choice")
 
-        self._current_question_widget = options_frame
+        self._current_question_widget = opt_inner
         self._current_question_data = question_data
 
         type_handlers = {
@@ -518,7 +535,7 @@ class ScenarioTestModeWindow(tk.Toplevel):
             "true_false": self.show_true_false,
         }
         handler = type_handlers.get(question_type, self.show_single_choice)
-        handler(options_frame, question_data)
+        handler(opt_inner, question_data)
 
         # Navigation buttons
         nav_frame = tk.Frame(question_frame, bg=Colors.CARD_BG)

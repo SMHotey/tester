@@ -245,7 +245,16 @@ class QuestionEditDialog(tk.Toplevel):
         type_menu.configure(font=Fonts.BODY, bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY,
                             activebackground=Colors.PRIMARY_BG, relief=tk.FLAT, bd=0,
                             highlightthickness=0, padx=8, pady=2)
-        type_menu["menu"].configure(font=Fonts.BODY, bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY)
+        menu_widget = type_menu["menu"]
+        menu_widget.configure(font=Fonts.BODY, bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY)
+        # Replace English labels with Russian display names
+        TYPE_DISPLAY = ["Одиночный выбор", "Множественный выбор", "Последовательность", "Правда/ложь"]
+        menu_widget.delete(0, "end")
+        for eng_val, rus_label in zip(QUESTION_TYPES, TYPE_DISPLAY):
+            menu_widget.add_command(
+                label=rus_label,
+                command=lambda v=eng_val: self.type_var.set(v)
+            )
         type_menu.pack(side=tk.LEFT, padx=(Spacing.SM, 0))
 
         self.type_var.trace_add("write", lambda *a: self._on_type_change())
@@ -403,10 +412,6 @@ class QuestionEditDialog(tk.Toplevel):
         if not self.option_entries:
             for _ in range(3):
                 self._add_option_row("", is_original=False)
-
-        # Apply saved correct answer after rows exist
-        if self.question:
-            self._apply_correct_answer(self.question)
 
         # Add option button
         add_btn = tk.Button(
@@ -717,10 +722,13 @@ class QuestionEditDialog(tk.Toplevel):
         self.question_text.insert("1.0", q.get("question", ""))
 
         qtype = q.get("type", "single_choice")
-        if qtype in QUESTION_TYPES:
-            self.type_var.set(qtype)
+        if qtype in QUESTION_TYPES and qtype != self.type_var.get():
+            self.type_var.set(qtype)  # triggers _on_type_change via trace
+        else:
+            self._on_type_change()  # rebuild manually if type unchanged
 
-        self._on_type_change()
+        # Apply saved correct answer after type is set and UI rebuilt
+        self._apply_correct_answer(q)
 
         # Load explanation and reference
         self.explanation_text.delete("1.0", tk.END)
