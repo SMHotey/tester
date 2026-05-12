@@ -484,7 +484,6 @@ class StudyModeWindow(tk.Toplevel):
         """Закрытие окна."""
         if self.on_back:
             self.on_back()
-        elif self.on_close:
+        if self.on_close:
             self.on_close()
-        else:
-            self.destroy()
+        self.destroy()

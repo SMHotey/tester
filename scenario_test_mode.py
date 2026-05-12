@@ -32,6 +32,7 @@ class ScenarioTestModeWindow(tk.Toplevel):
         self.user_answers = {}
         self.start_time = None
         self.selected_scenario = None
+        self.max_reached_index = 0
 
         self.title("Тестирование по сценарию")
         self.geometry("1000x700")
@@ -413,6 +414,7 @@ class ScenarioTestModeWindow(tk.Toplevel):
         self.current_question_index = 0
         self.user_answers = {}
         self.start_time = datetime.now()
+        self.max_reached_index = 0
 
         self.show_question()
 
@@ -426,7 +428,7 @@ class ScenarioTestModeWindow(tk.Toplevel):
         # Header
         self._create_modern_header(
             self,
-            f"Тестирование: {self.selected_scenario['title']}",
+            "Тестирование по сценарию",
             back_cmd=self.confirm_exit_test,
             back_text="←  Завершить",
             bg=Colors.SECONDARY
@@ -434,6 +436,36 @@ class ScenarioTestModeWindow(tk.Toplevel):
 
         # Progress bar
         self._show_progress_bar(self, self.current_question_index, total_questions)
+
+        # Scenario info card
+        scenario_outer = tk.Frame(self, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
+        scenario_outer.pack(fill=tk.X, padx=Spacing.LG, pady=(Spacing.LG, 0))
+
+        scenario_inner = tk.Frame(scenario_outer, bg=Colors.CARD_BG, bd=0, highlightthickness=0)
+        scenario_inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
+
+        scenario_content = tk.Frame(scenario_inner, bg=Colors.CARD_BG)
+        scenario_content.pack(fill=tk.X, padx=Spacing.XL, pady=Spacing.LG)
+
+        tk.Label(
+            scenario_content,
+            text=f"Сценарий: {self.selected_scenario['title']}",
+            font=Fonts.SUBHEADING,
+            bg=Colors.CARD_BG,
+            fg=Colors.PRIMARY,
+            anchor=tk.W
+        ).pack(fill=tk.X, pady=(0, Spacing.XS))
+
+        tk.Label(
+            scenario_content,
+            text=self.selected_scenario.get('description', ''),
+            font=Fonts.BODY,
+            bg=Colors.CARD_BG,
+            fg=Colors.TEXT_SECONDARY,
+            anchor=tk.W,
+            wraplength=900,
+            justify=tk.LEFT
+        ).pack(fill=tk.X)
 
         # Question card
         card_outer = tk.Frame(self, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
@@ -492,7 +524,7 @@ class ScenarioTestModeWindow(tk.Toplevel):
         nav_frame = tk.Frame(question_frame, bg=Colors.CARD_BG)
         nav_frame.pack(fill=tk.X, pady=(Spacing.XL, 0))
 
-        if self.current_question_index > 0:
+        if self.current_question_index > 0 and self.current_question_index == self.max_reached_index:
             self._create_modern_button(
                 nav_frame,
                 "←  Предыдущий",
@@ -532,6 +564,8 @@ class ScenarioTestModeWindow(tk.Toplevel):
         question_id = question_data.get("id")
         saved = self.user_answers.get(question_id, None)
         var = tk.IntVar(value=-1)
+        if saved is not None:
+            var.set(int(saved))
 
         for i, option in enumerate(options):
             outer = tk.Frame(parent, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
@@ -762,7 +796,7 @@ class ScenarioTestModeWindow(tk.Toplevel):
             )
             lbl.pack(padx=Spacing.LG, pady=Spacing.MD, fill=tk.X)
 
-            def make_toggle(v=val, inn=inner, out=outer, label=lbl):
+            def make_toggle(v=val, txt=text, inn=inner, out=outer, label=lbl):
                 def on_click(e):
                     var.set(v)
                     for sibling in parent.winfo_children():
@@ -772,12 +806,12 @@ class ScenarioTestModeWindow(tk.Toplevel):
                                 sibling.configure(bg=Colors.BORDER_LIGHT)
                                 for sib_label in sib_inner.winfo_children():
                                     if isinstance(sib_label, tk.Label):
-                                        txt = sib_label.cget('text')
-                                        if txt.startswith("●"):
-                                            sib_label.configure(text="○ " + txt[2:],
+                                        old_txt = sib_label.cget('text')
+                                        if old_txt.startswith("●"):
+                                            sib_label.configure(text="○ " + old_txt[2:],
                                                                 bg=Colors.CARD_BG,
                                                                 fg=Colors.TEXT_PRIMARY)
-                    label.configure(text=f"●  {text}", bg=Colors.SECONDARY_BG, fg=Colors.SECONDARY)
+                    label.configure(text=f"●  {txt}", bg=Colors.SECONDARY_BG, fg=Colors.SECONDARY)
                     inn.configure(bg=Colors.SECONDARY_BG)
                     out.configure(bg=Colors.SECONDARY)
                 return on_click
@@ -823,10 +857,52 @@ class ScenarioTestModeWindow(tk.Toplevel):
                 else:
                     self.user_answers[question_id] = val
 
+    def is_current_question_answered(self):
+        """Check if the current question has been answered by examining widget state."""
+        if not hasattr(self, '_current_question_widget') or not hasattr(self, '_current_question_data'):
+            return True
+
+        question_data = self._current_question_data
+        if not question_data:
+            return True
+
+        question_type = question_data.get("type", "single_choice")
+        widget = self._current_question_widget
+
+        if question_type == "single_choice":
+            if hasattr(widget, 'var'):
+                return widget.var.get() != -1
+            return False
+
+        elif question_type == "multiple_choice":
+            if hasattr(widget, 'vars'):
+                return any(var.get() for _, var in widget.vars)
+            return False
+
+        elif question_type == "ordering":
+            if hasattr(widget, 'order'):
+                return len(widget.order) > 0
+            return False
+
+        elif question_type == "true_false":
+            if hasattr(widget, 'var'):
+                return widget.var.get() in ("true", "false")
+            return False
+
+        return True
+
+    def show_validation_error(self):
+        """Show validation error message."""
+        messagebox.showwarning("Внимание", "Пожалуйста, выберите вариант ответа перед продолжением.")
+
     def next_question(self):
         """Go to next question."""
+        if not self.is_current_question_answered():
+            self.show_validation_error()
+            return
         self.save_current_answer()
         self.current_question_index += 1
+        self.max_reached_index = max(self.max_reached_index, self.current_question_index)
         self.show_question()
 
     def prev_question(self):
@@ -837,6 +913,9 @@ class ScenarioTestModeWindow(tk.Toplevel):
 
     def finish_test(self):
         """Finish the test and show results."""
+        if not self.is_current_question_answered():
+            self.show_validation_error()
+            return
         self.save_current_answer()
         if not messagebox.askyesno("Завершение теста", "Вы уверены, что хотите завершить тест?"):
             return
@@ -874,6 +953,11 @@ class ScenarioTestModeWindow(tk.Toplevel):
             else:
                 incorrect_count += 1
 
+            section_ref = ""
+            ref = question.get("reference", "")
+            if ref:
+                section_ref, _ = self._parse_reference(ref)
+
             results_details.append({
                 "question_id": qid,
                 "question": question.get("question"),
@@ -882,8 +966,8 @@ class ScenarioTestModeWindow(tk.Toplevel):
                 "user_answer": user_answer,
                 "correct_answer": correct_answer,
                 "explanation": explanation,
-                "reference": question.get("reference", ""),
-                "section_ref": question.get("reference", "").replace("п. ", "").strip() if question.get("reference") else ""
+                "reference": ref,
+                "section_ref": section_ref
             })
 
         result = {
@@ -1097,9 +1181,9 @@ class ScenarioTestModeWindow(tk.Toplevel):
                     )
                     expl_link.pack(anchor=tk.W, pady=(Spacing.XS, 0))
 
-                    def make_click_handler(d=detail):
+                    def make_click_handler(d=detail, win=details_window):
                         def on_click(e):
-                            self.open_reglament(d)
+                            self.open_reglament(d, win)
                         return on_click
 
                     expl_link.bind("<Button-1>", make_click_handler(detail))
@@ -1126,7 +1210,7 @@ class ScenarioTestModeWindow(tk.Toplevel):
                     activeforeground=Colors.TEXT_ON_PRIMARY,
                     relief=tk.FLAT,
                     cursor="hand2",
-                    command=lambda d=detail: self.open_reglament(d),
+                    command=lambda d=detail, win=details_window: self.open_reglament(d, win),
                     bd=0,
                     padx=10,
                     pady=4
@@ -1144,7 +1228,10 @@ class ScenarioTestModeWindow(tk.Toplevel):
         scrollbar.pack(side="right", fill="y")
 
     def _parse_reference(self, reference):
-        """Parse reference field to extract section reference and display text."""
+        """
+        Parse reference field to extract section reference for regulation link.
+        Returns: (section_ref, _) where section_ref is e.g., "2.1"
+        """
         if not reference:
             return None, ""
 
@@ -1184,12 +1271,12 @@ class ScenarioTestModeWindow(tk.Toplevel):
                 return section.get("title", "")
         return ""
 
-    def open_reglament(self, detail):
+    def open_reglament(self, detail, parent_window=None):
         """Open regulation section based on reference."""
         from study_mode import StudyModeWindow
         section_ref = detail.get("section_ref", "")
         self.study_window = StudyModeWindow(
-            self,
+            parent_window or self,
             self.reglament,
             on_close=lambda: None,
             section_reference=section_ref

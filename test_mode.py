@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 import json
+import math
 import random
 
 from style_config import Colors, Fonts, Spacing
@@ -31,6 +32,7 @@ class TestModeWindow(tk.Toplevel):
         self.current_question_index = 0
         self.user_answers = {}
         self.start_time = None
+        self.max_reached_index = 0
 
         self.title("Режим тестирования")
         self.geometry("1000x700")
@@ -341,9 +343,13 @@ class TestModeWindow(tk.Toplevel):
             # true_false and ordering - use as is
             internal_q["correct_answer"] = correct
 
-        # Handle reference field (new format) - pass through for explanation
+        # Handle reference field (new format) - pass through for regulation link
         if "reference" in q:
             internal_q["reference"] = q["reference"]
+
+        # Handle explanation field (new format) - pass through for display
+        if "explanation" in q:
+            internal_q["explanation"] = q["explanation"]
 
         return internal_q
 
@@ -374,12 +380,13 @@ class TestModeWindow(tk.Toplevel):
         self.user_data["first_name"] = first_name
         self.save_user_data()
 
-        selected_questions = random.sample(self.test_questions, question_count)
+        selected_questions = self._select_questions_with_constraints(self.test_questions, question_count)
         self.current_questions = [self._convert_question_to_internal(q) for q in selected_questions]
 
         self.current_question_index = 0
         self.user_answers = {}
         self.start_time = datetime.now()
+        self.max_reached_index = 0
 
         self.show_question()
 
@@ -474,7 +481,7 @@ class TestModeWindow(tk.Toplevel):
         nav_frame = tk.Frame(question_frame, bg=Colors.CARD_BG)
         nav_frame.pack(fill=tk.X, pady=(Spacing.XL, 0))
 
-        if self.current_question_index > 0:
+        if self.current_question_index > 0 and self.current_question_index == self.max_reached_index:
             self._create_modern_button(
                 nav_frame,
                 "←  Предыдущий",
@@ -548,6 +555,8 @@ class TestModeWindow(tk.Toplevel):
         saved = self.user_answers.get(question_id, None)
 
         var = tk.IntVar(value=-1)
+        if saved is not None:
+            var.set(int(saved))
 
         def make_select(idx, circle, inner, outer, label):
             def on_click(e):
@@ -786,7 +795,7 @@ class TestModeWindow(tk.Toplevel):
             )
             lbl.pack(padx=Spacing.LG, pady=Spacing.MD, fill=tk.X)
 
-            def make_toggle(v=val, inn=inner, out=outer, label=lbl):
+            def make_toggle(v=val, txt=text, inn=inner, out=outer, label=lbl):
                 def on_click(e):
                     var.set(v)
                     # Reset all siblings
@@ -798,15 +807,15 @@ class TestModeWindow(tk.Toplevel):
                                 sib_outer.configure(bg=Colors.BORDER_LIGHT)
                                 for sib_label in sib_inner.winfo_children():
                                     if isinstance(sib_label, tk.Label):
-                                        txt = sib_label.cget('text')
-                                        if txt.startswith("●"):
-                                            sib_label.configure(text="○ " + txt[2:],
+                                        old_txt = sib_label.cget('text')
+                                        if old_txt.startswith("●"):
+                                            sib_label.configure(text="○ " + old_txt[2:],
                                                                 bg=Colors.CARD_BG,
                                                                 fg=Colors.TEXT_PRIMARY)
-                                        elif txt.startswith("○"):
+                                        elif old_txt.startswith("○"):
                                             pass  # already unchecked
                     # Activate this
-                    label.configure(text=f"●  {text}", bg=Colors.PRIMARY_BG, fg=Colors.PRIMARY)
+                    label.configure(text=f"●  {txt}", bg=Colors.PRIMARY_BG, fg=Colors.PRIMARY)
                     inn.configure(bg=Colors.PRIMARY_BG)
                     out.configure(bg=Colors.PRIMARY)
                 return on_click
@@ -894,6 +903,60 @@ class TestModeWindow(tk.Toplevel):
         """Show validation error message."""
         messagebox.showwarning("Внимание", "Пожалуйста, выберите вариант ответа перед продолжением.")
 
+    def _select_questions_with_constraints(self, all_questions, count):
+        """Select questions with required distribution constraints:
+        - 20% from IDs 201-240
+        - 15% type 'ordering'
+        - 20% type 'multiple_choice'
+        """
+        # Categorize questions into pools
+        pool_201_240 = [q for q in all_questions if 201 <= q.get("id", 0) <= 240]
+        pool_ordering = [q for q in all_questions if q.get("type") == "ordering"]
+        pool_multiple = [q for q in all_questions if q.get("type") == "multiple_choice"]
+
+        # Minimum targets (capped by availability)
+        min_201_240 = min(max(1, math.ceil(count * 0.2)), len(pool_201_240))
+        min_ordering = min(max(1, math.ceil(count * 0.15)), len(pool_ordering))
+        min_multiple = min(max(1, math.ceil(count * 0.2)), len(pool_multiple))
+
+        selected = []
+        selected_ids = set()
+
+        def pick_from_pool(pool, n):
+            """Pick n items from pool not already selected."""
+            candidates = [q for q in pool if q["id"] not in selected_ids]
+            random.shuffle(candidates)
+            take = min(n, len(candidates))
+            for q in candidates[:take]:
+                selected.append(q)
+                selected_ids.add(q["id"])
+            return take
+
+        # Phase 1: Pick from IDs 201-240
+        pick_from_pool(pool_201_240, min_201_240)
+
+        # Phase 2: Fill ordering quota
+        current_ordering = sum(1 for q in selected if q.get("type") == "ordering")
+        if current_ordering < min_ordering:
+            pick_from_pool(pool_ordering, min_ordering - current_ordering)
+
+        # Phase 3: Fill multiple_choice quota
+        current_multiple = sum(1 for q in selected if q.get("type") == "multiple_choice")
+        if current_multiple < min_multiple:
+            pick_from_pool(pool_multiple, min_multiple - current_multiple)
+
+        # Phase 4: Fill remaining from all questions
+        if len(selected) < count:
+            remaining = [q for q in all_questions if q["id"] not in selected_ids]
+            random.shuffle(remaining)
+            take = min(count - len(selected), len(remaining))
+            for q in remaining[:take]:
+                selected.append(q)
+                selected_ids.add(q["id"])
+
+        random.shuffle(selected)
+        return selected
+
     def next_question(self):
         """Go to next question."""
         if not self.is_current_question_answered():
@@ -901,23 +964,19 @@ class TestModeWindow(tk.Toplevel):
             return
         self.save_current_answer()
         self.current_question_index += 1
+        self.max_reached_index = max(self.max_reached_index, self.current_question_index)
         self.show_question()
 
     def prev_question(self):
         """Go to previous question."""
-        if not self.is_current_question_answered():
-            self.show_validation_error()
-            return
         self.save_current_answer()
         self.current_question_index -= 1
         self.show_question()
 
     def _parse_reference(self, reference):
         """
-        Parse reference field to extract section reference and display text.
-        Returns: (section_ref, display_text)
-        - section_ref: e.g., "2.1" (for linking to study mode)
-        - display_text: text to display (custom text if present, else section title)
+        Parse reference field to extract section reference for regulation link.
+        Returns: (section_ref, _) where section_ref is e.g., "2.1"
         """
         if not reference:
             return None, ""
@@ -1026,16 +1085,11 @@ class TestModeWindow(tk.Toplevel):
             else:
                 incorrect_count += 1
 
-            # Build explanation from reference
-            explanation = ""
+            # Use explanation field from question for display, reference for regulation link
+            question_explanation = question.get("explanation", "")
             section_ref = ""
             if reference:
-                section_ref, display_text = self._parse_reference(reference)
-                if display_text:
-                    explanation = display_text
-                elif section_ref:
-                    title = self._get_regulation_section_title(section_ref)
-                    explanation = title if title else f"п. {section_ref}"
+                section_ref, _ = self._parse_reference(reference)
 
             results_details.append({
                 "question_id": question_id,
@@ -1044,7 +1098,7 @@ class TestModeWindow(tk.Toplevel):
                 "correct": is_correct,
                 "user_answer": user_answer,
                 "correct_answer": correct_answer,
-                "explanation": explanation,
+                "explanation": question_explanation,
                 "reference": reference,
                 "section_ref": section_ref
             })
@@ -1257,14 +1311,14 @@ class TestModeWindow(tk.Toplevel):
                     )
                     expl_link.pack(anchor=tk.W, pady=(Spacing.XS, 0))
 
-                    def make_click_handler(d=detail):
+                    def make_click_handler(d=detail, win=details_window):
                         def on_click(e):
-                            self.open_reglament(d)
+                            self.open_reglament(d, win)
                         return on_click
 
                     expl_link.bind("<Button-1>", make_click_handler(detail))
-                    expl_link.bind("<Enter>", lambda e: expl_link.configure(font=("Segoe UI", 10, "underline", "bold")))
-                    expl_link.bind("<Leave>", lambda e: expl_link.configure(font=("Segoe UI", 10, "underline")))
+                    expl_link.bind("<Enter>", lambda e, w=expl_link: w.configure(font=("Segoe UI", 10, "underline", "bold")))
+                    expl_link.bind("<Leave>", lambda e, w=expl_link: w.configure(font=("Segoe UI", 10, "underline")))
                 else:
                     tk.Label(
                         expl_inner,
@@ -1286,7 +1340,7 @@ class TestModeWindow(tk.Toplevel):
                     activeforeground=Colors.TEXT_ON_PRIMARY,
                     relief=tk.FLAT,
                     cursor="hand2",
-                    command=lambda d=detail: self.open_reglament(d),
+                    command=lambda d=detail, win=details_window: self.open_reglament(d, win),
                     bd=0,
                     padx=10,
                     pady=4
@@ -1304,12 +1358,12 @@ class TestModeWindow(tk.Toplevel):
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-    def open_reglament(self, detail):
+    def open_reglament(self, detail, parent_window=None):
         """Open regulation section based on reference."""
         from study_mode import StudyModeWindow
         section_ref = detail.get("section_ref", "")
         self.study_window = StudyModeWindow(
-            self,
+            parent_window or self,
             self.reglament,
             on_close=lambda: None,
             section_reference=section_ref

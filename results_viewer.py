@@ -546,9 +546,9 @@ class ResultsViewerWindow(tk.Toplevel):
                 )
                 expl_link.pack(anchor=tk.W, pady=(Spacing.XS, 0))
 
-                def make_click_handler(d=detail):
+                def make_click_handler(d=detail, win=window):
                     def on_click(e):
-                        self.open_reglament_from_result(d)
+                        self.open_reglament_from_result(d, win)
                     return on_click
 
                 expl_link.bind("<Button-1>", make_click_handler(detail))
@@ -576,7 +576,7 @@ class ResultsViewerWindow(tk.Toplevel):
                 activeforeground=Colors.TEXT_ON_PRIMARY,
                 relief=tk.FLAT,
                 cursor="hand2",
-                command=lambda d=detail: self.open_reglament_from_result(d),
+                command=lambda d=detail, win=window: self.open_reglament_from_result(d, win),
                 bd=0,
                 padx=10,
                 pady=4
@@ -596,13 +596,13 @@ class ResultsViewerWindow(tk.Toplevel):
 
         window.protocol("WM_DELETE_WINDOW", window.destroy)
 
-    def open_reglament_from_result(self, detail):
+    def open_reglament_from_result(self, detail, parent_window=None):
         """Open regulation window from test results."""
         from study_mode import StudyModeWindow
         reglament = self._load_reglament_data()
         section_ref = detail.get("section_ref", "")
         study_window = StudyModeWindow(
-            self,
+            parent_window or self,
             reglament,
             on_close=lambda: None,
             section_reference=section_ref
