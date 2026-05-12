@@ -19,7 +19,7 @@ from study_mode import StudyModeWindow
 from test_mode import TestModeWindow
 from scenario_test_mode import ScenarioTestModeWindow
 from results_viewer import ResultsViewerWindow
-from question_manager import QuestionManagerWindow, show_password_dialog
+
 
 
 class TestApp:
@@ -127,7 +127,6 @@ class TestApp:
             on_test_mode=self.show_test_mode,
             on_view_results=self.show_results_viewer,
             on_scenario_test_mode=self.show_scenario_test_mode,
-            on_question_manager=self.show_question_manager
         )
 
     def show_study_mode(self):
@@ -176,29 +175,6 @@ class TestApp:
             self.root,
             self.results_file,
             on_back=self.show_mode_selection
-        )
-
-    def show_question_manager(self):
-        """Show question management window with password protection."""
-        show_password_dialog(
-            self.current_window or self.root,
-            on_success=lambda: self._open_question_manager()
-        )
-
-    def _open_question_manager(self):
-        """Open the question manager window."""
-        if self.current_window:
-            self.current_window.destroy()
-
-        def on_manager_close():
-            # Reload data after manager closes
-            self.load_test_questions()
-            self.load_scenarios()
-            self.show_mode_selection()
-
-        self.current_window = QuestionManagerWindow(
-            self.root,
-            on_close=on_manager_close
         )
 
     def run(self):

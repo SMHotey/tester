@@ -45,24 +45,15 @@ class ModeSelectionWindow(tk.Toplevel):
             "color_light": Colors.WARNING_BG,
             "attr": "on_view_results",
         },
-        {
-            "title": "Управление",
-            "description": "Редактирование вопросов и сценариев (требуется пароль)",
-            "icon": "⚙️",
-            "color": Colors.TEXT_SECONDARY,
-            "color_light": Colors.SURFACE,
-            "attr": "on_question_manager",
-        },
     ]
 
     def __init__(self, parent, on_study_mode, on_test_mode, on_view_results,
-                 on_scenario_test_mode=None, on_question_manager=None):
+                 on_scenario_test_mode=None):
         super().__init__(parent)
         self.on_study_mode = on_study_mode
         self.on_test_mode = on_test_mode
         self.on_view_results = on_view_results
         self.on_scenario_test_mode = on_scenario_test_mode
-        self.on_question_manager = on_question_manager
 
         self.title("Система тестирования")
         self.geometry("560x760")
