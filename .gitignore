@@ -12,6 +12,8 @@ build/
 
 # Auto-generated runtime data
 user_data.json
+test_results.json
+dist/test_results.json
 
 # Results export
 results/

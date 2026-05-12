@@ -65,7 +65,7 @@ class ModeSelectionWindow(tk.Toplevel):
         self.on_question_manager = on_question_manager
 
         self.title("Система тестирования")
-        self.geometry("560x700")
+        self.geometry("560x760")
         self.resizable(False, False)
         self.configure(bg=Colors.BG)
 

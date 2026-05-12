@@ -217,7 +217,6 @@ class QuestionEditDialog(tk.Toplevel):
         top_row = tk.Frame(content, bg=Colors.BG)
         top_row.pack(fill=tk.X, padx=Spacing.XL, pady=(Spacing.XL, Spacing.MD))
 
-        # ID (auto or editable for scenario)
         tk.Label(top_row, text="ID:", font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_PRIMARY).pack(side=tk.LEFT)
         if self.question:
             id_text = str(self.question.get("id", ""))
@@ -240,7 +239,6 @@ class QuestionEditDialog(tk.Toplevel):
                          fg=Colors.TEXT_SECONDARY).pack(side=tk.LEFT, padx=(Spacing.SM, Spacing.XL))
                 self._id_value = str(next_id)
 
-        # Type dropdown
         tk.Label(top_row, text="Тип:", font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_PRIMARY).pack(side=tk.LEFT)
         self.type_var = tk.StringVar(value=QUESTION_TYPES[0])
         type_menu = tk.OptionMenu(top_row, self.type_var, *QUESTION_TYPES)
@@ -271,18 +269,11 @@ class QuestionEditDialog(tk.Toplevel):
         self.question_text.bind("<FocusIn>", qf_in)
         self.question_text.bind("<FocusOut>", qf_out)
 
-        # ─── Options Section ───
+        # ─── Options + Answer merged section ───
         self.options_frame = tk.Frame(content, bg=Colors.BG)
         self.options_frame.pack(fill=tk.BOTH, expand=True, padx=Spacing.XL, pady=(Spacing.MD, 0))
 
-        self._build_options_ui()
-
-        # ─── Correct answer section ───
-        tk.Label(content, text="Правильный ответ:", font=Fonts.BODY, bg=Colors.BG,
-                 fg=Colors.TEXT_PRIMARY, anchor=tk.W).pack(fill=tk.X, padx=Spacing.XL, pady=(Spacing.MD, Spacing.XS))
-
-        self.answer_frame = tk.Frame(content, bg=Colors.BG)
-        self.answer_frame.pack(fill=tk.X, padx=Spacing.XL)
+        self._rebuild_options_with_answer()
 
         # ─── Explanation ───
         tk.Label(content, text="Объяснение:", font=Fonts.BODY, bg=Colors.BG,
@@ -346,23 +337,43 @@ class QuestionEditDialog(tk.Toplevel):
 
         self._on_type_change()
 
-    def _build_options_ui(self):
-        """Build the options section (varies by type)."""
+    def _on_type_change(self):
+        """Handle question type change."""
+        self._rebuild_options_with_answer()
+
+    def _rebuild_options_with_answer(self):
+        """Rebuild the merged options + correct answer section."""
         for w in self.options_frame.winfo_children():
             w.destroy()
 
         qtype = self.type_var.get()
 
         if qtype == "true_false":
-            tk.Label(self.options_frame, text="Для типа «Верно / Неверно» варианты не требуются.",
-                     font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_SECONDARY).pack(anchor=tk.W, pady=Spacing.SM)
+            # True/false: just show the answer radios
+            tk.Label(self.options_frame, text="Правильный ответ:",
+                     font=Fonts.SUBHEADING, bg=Colors.BG, fg=Colors.TEXT_PRIMARY,
+                     anchor=tk.W).pack(fill=tk.X, pady=(0, Spacing.SM))
+
+            self.tf_var = tk.StringVar(value="true")
+            for val, label in [("true", "Верно"), ("false", "Неверно")]:
+                row = tk.Frame(self.options_frame, bg=Colors.BG)
+                row.pack(fill=tk.X, pady=Spacing.XS)
+                rb = tk.Radiobutton(
+                    row, text=label, variable=self.tf_var, value=val,
+                    font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_PRIMARY,
+                    selectcolor=Colors.CARD_BG, activebackground=Colors.BG,
+                    relief=tk.FLAT, bd=0, cursor="hand2"
+                )
+                rb.pack(anchor=tk.W, padx=Spacing.LG)
             return
 
-        tk.Label(self.options_frame, text="Варианты ответов:", font=Fonts.BODY, bg=Colors.BG,
-                 fg=Colors.TEXT_PRIMARY, anchor=tk.W).pack(fill=tk.X)
+        # For other types: merged options list + ordering section
+        tk.Label(self.options_frame, text="Варианты ответов (нажмите ✎ чтобы изменить текст, нажмите на маркер чтобы отметить правильный):",
+                 font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_PRIMARY, anchor=tk.W,
+                 wraplength=680, justify=tk.LEFT).pack(fill=tk.X, pady=(0, Spacing.SM))
 
-        # Container with scroll for options
-        opt_canvas = tk.Canvas(self.options_frame, bg=Colors.BG, highlightthickness=0, bd=0, height=120)
+        # Scrollable container
+        opt_canvas = tk.Canvas(self.options_frame, bg=Colors.BG, highlightthickness=0, bd=0, height=150)
         opt_scroll = tk.Scrollbar(self.options_frame, orient="vertical", command=opt_canvas.yview, bg=Colors.SURFACE)
         opt_inner = tk.Frame(opt_canvas, bg=Colors.BG)
 
@@ -375,43 +386,89 @@ class QuestionEditDialog(tk.Toplevel):
 
         self.opt_inner = opt_inner
         self.opt_canvas = opt_canvas
-        self.option_entries = []  # list of StringVars
+        # Each entry: (row_frame, StringVar, is_original, correct_mark_label)
+        self.option_entries = []
 
-        # Add initial empty options
+        # Answer tracking vars
+        if qtype == "single_choice":
+            self.answer_single_var = tk.IntVar(value=-1)
+        elif qtype == "multiple_choice":
+            self.answer_multi_vars = {}
+
+        # Load existing options or create empty ones
         if self.question:
-            options = self.question.get("options", [])
-            for opt in options:
-                self._add_option_entry(opt)
-        else:
+            existing_opts = self.question.get("options", [])
+            for opt_text in existing_opts:
+                self._add_option_row(opt_text, is_original=True)
+        if not self.option_entries:
             for _ in range(3):
-                self._add_option_entry("")
+                self._add_option_row("", is_original=False)
+
+        # Apply saved correct answer after rows exist
+        if self.question:
+            self._apply_correct_answer(self.question)
 
         # Add option button
         add_btn = tk.Button(
             self.options_frame, text="+ Добавить вариант", font=("Segoe UI", 9),
             bg=Colors.PRIMARY_BG, fg=Colors.PRIMARY,
             activebackground=Colors.PRIMARY_LIGHT, activeforeground=Colors.TEXT_ON_PRIMARY,
-            relief=tk.FLAT, cursor="hand2", bd=0, padx=12, pady=4,
-            command=lambda: self._add_option_entry("")
+            relief=tk.FLAT, cursor="hand2", bd=0, padx=14, pady=5,
+            command=lambda: self._add_option_row("", is_original=False)
         )
         add_btn.pack(pady=(Spacing.SM, 0))
 
-    def _add_option_entry(self, text=""):
-        """Add an option entry row."""
+        # For ordering: add separate order section below
+        if qtype == "ordering":
+            self._build_order_section()
+
+    def _add_option_row(self, text, is_original):
+        """Add a single option row with mark, entry, edit, delete."""
         idx = len(self.option_entries)
+        qtype = self.type_var.get()
+
         row = tk.Frame(self.opt_inner, bg=Colors.BG)
         row.pack(fill=tk.X, pady=Spacing.XS)
 
-        var = tk.StringVar(value=text)
+        # Correct answer marker
+        if qtype == "single_choice":
+            correct_val = self.answer_single_var.get()
+            is_correct = (correct_val == idx)
+            marker_text = "●" if is_correct else "○"
+            marker_fg = Colors.SUCCESS if is_correct else Colors.TEXT_SECONDARY
+            marker = tk.Label(
+                row, text=marker_text, font=("Segoe UI", 14, "bold"),
+                bg=Colors.BG, fg=marker_fg, cursor="hand2", width=2
+            )
+            marker.pack(side=tk.LEFT, padx=(0, Spacing.XS))
+            marker.bind("<Button-1>", lambda e, i=idx: self._mark_single(i))
+        elif qtype == "multiple_choice":
+            is_correct = self.answer_multi_vars.get(idx, tk.BooleanVar(value=False)).get()
+            marker_text = "☑" if is_correct else "☐"
+            marker_fg = Colors.SUCCESS if is_correct else Colors.TEXT_SECONDARY
+            marker = tk.Label(
+                row, text=marker_text, font=("Segoe UI", 12, "bold"),
+                bg=Colors.BG, fg=marker_fg, cursor="hand2", width=2
+            )
+            marker.pack(side=tk.LEFT, padx=(0, Spacing.XS))
+            marker.bind("<Button-1>", lambda e, i=idx: self._mark_multi(i))
+        else:
+            # ordering: number label
+            num_label = tk.Label(row, text=f"{idx+1}.", font=Fonts.BODY,
+                                 bg=Colors.BG, fg=Colors.TEXT_SECONDARY, width=3)
+            num_label.pack(side=tk.LEFT)
 
-        entry_frame = tk.Frame(row, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0, height=32)
+        # Entry for option text
+        var = tk.StringVar(value=text)
+        entry_frame = tk.Frame(row, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0, height=30)
         entry_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
         entry_frame.pack_propagate(False)
 
         entry = tk.Entry(
             entry_frame, textvariable=var, font=Fonts.BODY,
             bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY,
-            relief=tk.FLAT, bd=0, insertbackground=Colors.PRIMARY
+            relief=tk.FLAT, bd=0, insertbackground=Colors.PRIMARY,
+            state="readonly" if qtype != "ordering" else tk.NORMAL
         )
         entry.pack(fill=tk.BOTH, expand=True, padx=Spacing.SM, pady=2)
 
@@ -420,135 +477,149 @@ class QuestionEditDialog(tk.Toplevel):
         entry.bind("<FocusIn>", ef_in)
         entry.bind("<FocusOut>", ef_out)
 
+        # Edit button (click to toggle entry readonly state)
+        edit_btn = tk.Button(
+            row, text="✎", font=("Segoe UI", 9),
+            bg=Colors.PRIMARY_BG, fg=Colors.PRIMARY,
+            activebackground=Colors.PRIMARY, activeforeground=Colors.WHITE,
+            relief=tk.FLAT, cursor="hand2", bd=0, padx=6, pady=0, width=3,
+            command=lambda i=idx, e=entry: self._toggle_edit(i, e)
+        )
+        edit_btn.pack(side=tk.RIGHT, padx=(Spacing.XS, 0))
+
         # Delete button
         del_btn = tk.Button(
-            row, text="✕", font=("Segoe UI", 8),
+            row, text="✕", font=("Segoe UI", 9),
             bg=Colors.ERROR_BG, fg=Colors.ERROR,
             activebackground=Colors.ERROR, activeforeground=Colors.WHITE,
-            relief=tk.FLAT, cursor="hand2", bd=0, padx=6, pady=0,
+            relief=tk.FLAT, cursor="hand2", bd=0, padx=6, pady=0, width=3,
             command=lambda i=idx: self._remove_option(i)
         )
-        del_btn.pack(side=tk.RIGHT, padx=(Spacing.SM, 0))
+        del_btn.pack(side=tk.RIGHT, padx=(Spacing.XS, 0))
 
-        self.option_entries.append((row, var, entry_frame))
+        # Marker label stored as widget reference for updates
+        if qtype in ("single_choice", "multiple_choice"):
+            self.option_entries.append((row, var, is_original, marker, entry, edit_btn))
+        else:
+            self.option_entries.append((row, var, is_original, None, entry, edit_btn))
 
         # Scroll to bottom
         self.opt_inner.update_idletasks()
         self.opt_canvas.yview_moveto(1.0)
 
+    def _toggle_edit(self, idx, entry):
+        """Toggle entry between readonly and editable."""
+        if entry.cget("state") == "readonly":
+            entry.configure(state=tk.NORMAL)
+            entry.focus_set()
+            entry.icursor(tk.END)
+        else:
+            entry.configure(state="readonly")
+
+    def _mark_single(self, idx):
+        """Mark option as correct for single_choice."""
+        self.answer_single_var.set(idx)
+        # Refresh markers
+        for i, (row, var, orig, marker, entry, edit_btn) in enumerate(self.option_entries):
+            if marker:
+                is_c = (i == idx)
+                marker.configure(
+                    text="●" if is_c else "○",
+                    fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY
+                )
+                # Highlight row bg
+                row.configure(bg=Colors.PRIMARY_BG if is_c else Colors.BG)
+
+    def _mark_multi(self, idx):
+        """Toggle correct mark for multiple_choice."""
+        if idx not in self.answer_multi_vars:
+            self.answer_multi_vars[idx] = tk.BooleanVar(value=False)
+        var = self.answer_multi_vars[idx]
+        var.set(not var.get())
+        is_c = var.get()
+        row, _, _, marker, _, _ = self.option_entries[idx]
+        if marker:
+            marker.configure(
+                text="☑" if is_c else "☐",
+                fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY
+            )
+            row.configure(bg=Colors.PRIMARY_BG if is_c else Colors.BG)
+
     def _remove_option(self, idx):
-        """Remove an option entry."""
+        """Remove an option entry with confirmation for existing ones."""
         if len(self.option_entries) <= 2:
             messagebox.showwarning("Внимание", "Должно быть минимум 2 варианта ответа")
             return
-        row, var, frame = self.option_entries[idx]
+
+        row, var, is_original, marker, entry, edit_btn = self.option_entries[idx]
+
+        if is_original:
+            if not messagebox.askyesno(
+                "Подтверждение",
+                "Вариант ответа будет удален безвозвратно"
+            ):
+                return
+
         row.destroy()
         self.option_entries.pop(idx)
 
-    def _on_type_change(self):
-        """Handle question type change."""
-        # Rebuild options
-        self._build_options_ui()
-        # Rebuild answer section
-        self._rebuild_answer_ui()
-
-    def _rebuild_answer_ui(self):
-        """Rebuild the correct answer UI based on type."""
-        for w in self.answer_frame.winfo_children():
-            w.destroy()
-
+        # Re-index markers for single_choice / multiple_choice
         qtype = self.type_var.get()
-        self._answer_widgets = []
-
         if qtype == "single_choice":
-            self._build_answer_single()
+            # Reset answer_single_var if needed
+            current = self.answer_single_var.get()
+            if current == idx:
+                self.answer_single_var.set(-1)
+            elif current > idx:
+                self.answer_single_var.set(current - 1)
+            # Refresh markers
+            for i, (r, v, orig, m, e, eb) in enumerate(self.option_entries):
+                if m:
+                    is_c = (i == self.answer_single_var.get())
+                    m.configure(text="●" if is_c else "○", fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY)
+                    r.configure(bg=Colors.PRIMARY_BG if is_c else Colors.BG)
         elif qtype == "multiple_choice":
-            self._build_answer_multiple()
-        elif qtype == "ordering":
-            self._build_answer_ordering()
-        elif qtype == "true_false":
-            self._build_answer_truefalse()
+            # Rebuild multi vars
+            new_multi = {}
+            for i, (r, v, orig, m, e, eb) in enumerate(self.option_entries):
+                old_idx = i if i < idx else i + 1  # approximate
+                if old_idx in self.answer_multi_vars:
+                    new_multi[i] = self.answer_multi_vars[old_idx]
+            self.answer_multi_vars = new_multi
+            for i, (r, v, orig, m, e, eb) in enumerate(self.option_entries):
+                if m:
+                    is_c = self.answer_multi_vars.get(i, tk.BooleanVar(value=False)).get()
+                    m.configure(text="☑" if is_c else "☐", fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY)
+                    r.configure(bg=Colors.PRIMARY_BG if is_c else Colors.BG)
 
-    def _get_options_text(self):
-        """Get current option texts."""
-        return [var.get() for _, var, _ in self.option_entries if var.get().strip()]
+    def _build_order_section(self):
+        """Build ordering answer section below the options."""
+        sep = tk.Frame(self.options_frame, bg=Colors.BORDER, height=1)
+        sep.pack(fill=tk.X, pady=(Spacing.LG, Spacing.MD))
 
-    def _build_answer_single(self):
-        """Build single_choice answer selector."""
-        self.answer_single_var = tk.IntVar(value=-1)
-        options = self._get_options_text()
-        if not options:
-            tk.Label(self.answer_frame, text="(сначала добавьте варианты ответов)",
-                     font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_DISABLED).pack(anchor=tk.W)
-            return
+        tk.Label(self.options_frame,
+                 text="Правильный порядок (расположите стрелками):",
+                 font=Fonts.BODY_SMALL, bg=Colors.BG, fg=Colors.TEXT_SECONDARY,
+                 anchor=tk.W).pack(fill=tk.X, pady=(0, Spacing.SM))
 
-        for i, opt in enumerate(options):
-            row = tk.Frame(self.answer_frame, bg=Colors.BG)
-            row.pack(fill=tk.X, pady=Spacing.XS)
+        order_outer = tk.Frame(self.options_frame, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
+        order_outer.pack(fill=tk.X)
 
-            rb = tk.Radiobutton(
-                row, text=f"{i}. {opt}", variable=self.answer_single_var, value=i,
-                font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_PRIMARY,
-                selectcolor=Colors.CARD_BG, activebackground=Colors.BG,
-                relief=tk.FLAT, bd=0, cursor="hand2"
-            )
-            rb.pack(anchor=tk.W, padx=Spacing.LG)
+        order_inner = tk.Frame(order_outer, bg=Colors.CARD_BG)
+        order_inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
 
-    def _build_answer_multiple(self):
-        """Build multiple_choice answer selector."""
-        self.answer_multi_vars = {}
-        options = self._get_options_text()
-        if not options:
-            tk.Label(self.answer_frame, text="(сначала добавьте варианты ответов)",
-                     font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_DISABLED).pack(anchor=tk.W)
-            return
-
-        for i, opt in enumerate(options):
-            var = tk.BooleanVar(value=False)
-            self.answer_multi_vars[i] = var
-            row = tk.Frame(self.answer_frame, bg=Colors.BG)
-            row.pack(fill=tk.X, pady=Spacing.XS)
-
-            cb = tk.Checkbutton(
-                row, text=f"{i}. {opt}", variable=var,
-                font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_PRIMARY,
-                selectcolor=Colors.CARD_BG, activebackground=Colors.BG,
-                relief=tk.FLAT, bd=0, cursor="hand2"
-            )
-            cb.pack(anchor=tk.W, padx=Spacing.LG)
-
-    def _build_answer_ordering(self):
-        """Build ordering answer selector."""
-        self.answer_order_vars = []
-        options = self._get_options_text()
-        if not options:
-            tk.Label(self.answer_frame, text="(сначала добавьте варианты ответов)",
-                     font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_DISABLED).pack(anchor=tk.W)
-            return
-
-        tk.Label(self.answer_frame,
-                 text="Расставьте варианты в правильном порядке (стрелками):",
-                 font=Fonts.BODY_SMALL, bg=Colors.BG, fg=Colors.TEXT_SECONDARY).pack(anchor=tk.W, pady=(0, Spacing.SM))
-
-        list_frame = tk.Frame(self.answer_frame, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
-        list_frame.pack(fill=tk.X)
-
-        inner = tk.Frame(list_frame, bg=Colors.CARD_BG)
-        inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
+        order_content = tk.Frame(order_inner, bg=Colors.CARD_BG)
+        order_content.pack(fill=tk.X, padx=Spacing.MD, pady=Spacing.MD)
 
         self.order_listbox = tk.Listbox(
-            inner, font=Fonts.BODY, bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY,
+            order_content, font=Fonts.BODY, bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY,
             selectbackground=Colors.PRIMARY_BG, selectforeground=Colors.PRIMARY,
-            activestyle='none', height=6, borderwidth=0, highlightthickness=0, relief=tk.FLAT
+            activestyle='none', height=5, borderwidth=0, highlightthickness=0, relief=tk.FLAT
         )
-        self.order_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=Spacing.MD, pady=Spacing.MD)
+        self.order_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        indices = list(range(len(options)))
-        for i, idx in enumerate(indices):
-            self.order_listbox.insert(tk.END, f"  {i+1}. {options[idx]}")
-
-        btn_frame = tk.Frame(inner, bg=Colors.CARD_BG)
-        btn_frame.pack(side=tk.RIGHT, padx=(0, Spacing.MD))
+        btn_frame = tk.Frame(order_content, bg=Colors.CARD_BG)
+        btn_frame.pack(side=tk.RIGHT, padx=(Spacing.MD, 0))
 
         tk.Button(btn_frame, text="↑", font=("Segoe UI", 12),
                   bg=Colors.SURFACE, fg=Colors.TEXT_PRIMARY,
@@ -561,7 +632,18 @@ class QuestionEditDialog(tk.Toplevel):
                   cursor="hand2", bd=0, padx=8, pady=2,
                   command=lambda: self._order_move(1)).pack(pady=Spacing.XS)
 
-        self.order_listbox.selection_set(0)
+        self._refresh_order_listbox()
+
+    def _refresh_order_listbox(self):
+        """Refresh the order listbox from current option texts."""
+        if not hasattr(self, 'order_listbox'):
+            return
+        self.order_listbox.delete(0, tk.END)
+        options = [var.get().strip() for _, var, _, _, _, _ in self.option_entries if var.get().strip()]
+        for i, opt in enumerate(options):
+            self.order_listbox.insert(tk.END, f"  {i+1}. {opt}")
+        if self.order_listbox.size() > 0:
+            self.order_listbox.selection_set(0)
 
     def _order_move(self, direction):
         """Move item up or down in ordering listbox."""
@@ -579,88 +661,70 @@ class QuestionEditDialog(tk.Toplevel):
         self.order_listbox.selection_set(new_idx)
 
         # Renumber
-        options = self._get_options_text()
         for i in range(self.order_listbox.size()):
             item = self.order_listbox.get(i)
-            # Extract the text after "  X. "
             display = item[item.find(". ")+2:] if ". " in item else item
             self.order_listbox.delete(i)
             self.order_listbox.insert(i, f"  {i+1}. {display}")
 
-    def _build_answer_truefalse(self):
-        """Build true/false answer selector."""
-        self.tf_var = tk.StringVar(value="true")
+    def _get_options_text(self):
+        """Get current option texts."""
+        return [var.get().strip() for _, var, _, _, _, _ in self.option_entries if var.get().strip()]
 
-        for val, label in [("true", "Верно"), ("false", "Неверно")]:
-            row = tk.Frame(self.answer_frame, bg=Colors.BG)
-            row.pack(fill=tk.X, pady=Spacing.XS)
+    def _apply_correct_answer(self, q):
+        """Apply the saved correct answer to the current option rows."""
+        qtype = q.get("type", "single_choice")
+        correct = q.get("correct_answer")
+        if correct is None:
+            return
 
-            rb = tk.Radiobutton(
-                row, text=label, variable=self.tf_var, value=val,
-                font=Fonts.BODY, bg=Colors.BG, fg=Colors.TEXT_PRIMARY,
-                selectcolor=Colors.CARD_BG, activebackground=Colors.BG,
-                relief=tk.FLAT, bd=0, cursor="hand2"
-            )
-            rb.pack(anchor=tk.W, padx=Spacing.LG)
+        if qtype == "single_choice":
+            if isinstance(correct, list):
+                correct = correct[0]
+            self.answer_single_var.set(int(correct))
+            for i, (row, var, orig, marker, entry, edit_btn) in enumerate(self.option_entries):
+                if marker:
+                    is_c = (i == int(correct))
+                    marker.configure(text="●" if is_c else "○", fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY)
+                    row.configure(bg=Colors.PRIMARY_BG if is_c else Colors.BG)
+
+        elif qtype == "multiple_choice":
+            correct_list = correct if isinstance(correct, list) else [correct]
+            for idx in correct_list:
+                if int(idx) < len(self.option_entries):
+                    self.answer_multi_vars[int(idx)] = tk.BooleanVar(value=True)
+            for i, (row, var, orig, marker, entry, edit_btn) in enumerate(self.option_entries):
+                if marker:
+                    is_c = self.answer_multi_vars.get(i, tk.BooleanVar(value=False)).get()
+                    marker.configure(text="☑" if is_c else "☐", fg=Colors.SUCCESS if is_c else Colors.TEXT_SECONDARY)
+                    row.configure(bg=Colors.PRIMARY_BG if is_c else Colors.BG)
+
+        elif qtype == "ordering":
+            options = q.get("options", [])
+            correct_order = correct if isinstance(correct, list) else []
+            if correct_order and hasattr(self, 'order_listbox'):
+                self.order_listbox.delete(0, tk.END)
+                for i, idx in enumerate(correct_order):
+                    if idx < len(options):
+                        self.order_listbox.insert(tk.END, f"  {i+1}. {options[idx]}")
+
+        elif qtype == "true_false":
+            self.tf_var.set("true" if correct else "false")
 
     def _load_question(self, q):
         """Load existing question data into UI."""
         self.question_text.delete("1.0", tk.END)
         self.question_text.insert("1.0", q.get("question", ""))
 
-        # Set type
         qtype = q.get("type", "single_choice")
         if qtype in QUESTION_TYPES:
             self.type_var.set(qtype)
 
         self._on_type_change()
 
-        # Load options
-        options = q.get("options", [])
-        if options and qtype != "true_false":
-            # Remove default empty entries and add real ones
-            for _, var, _ in self.option_entries:
-                var.set("")
-            # Replace entries
-            for i, opt in enumerate(options):
-                if i < len(self.option_entries):
-                    self.option_entries[i][1].set(opt)
-                else:
-                    self._add_option_entry(opt)
-
-        # Load correct answer
-        correct = q.get("correct_answer")
-        if correct is not None:
-            if qtype == "single_choice":
-                if isinstance(correct, list):
-                    correct = correct[0]
-                self.answer_single_var = tk.IntVar(value=int(correct))
-                self._rebuild_answer_ui()
-                self.answer_single_var.set(int(correct))
-            elif qtype == "multiple_choice":
-                correct_list = correct if isinstance(correct, list) else [correct]
-                self._rebuild_answer_ui()
-                for idx in correct_list:
-                    if int(idx) in self.answer_multi_vars:
-                        self.answer_multi_vars[int(idx)].set(True)
-            elif qtype == "ordering":
-                self._rebuild_answer_ui()
-                # Reorder listbox
-                correct_order = correct if isinstance(correct, list) else []
-                if correct_order and hasattr(self, 'order_listbox'):
-                    self.order_listbox.delete(0, tk.END)
-                    for i, idx in enumerate(correct_order):
-                        if idx < len(options):
-                            self.order_listbox.insert(tk.END, f"  {i+1}. {options[idx]}")
-            elif qtype == "true_false":
-                self._rebuild_answer_ui()
-                self.tf_var.set("true" if correct else "false")
-
-        # Explanation
+        # Load explanation and reference
         self.explanation_text.delete("1.0", tk.END)
         self.explanation_text.insert("1.0", q.get("explanation", ""))
-
-        # Reference
         self.ref_var.set(q.get("reference", ""))
 
     def _next_available_id(self):
@@ -679,7 +743,6 @@ class QuestionEditDialog(tk.Toplevel):
             messagebox.showwarning("Ошибка", "Введите текст вопроса")
             return
 
-        # Build question object
         q = {
             "type": qtype,
             "question": question_text,
@@ -703,12 +766,11 @@ class QuestionEditDialog(tk.Toplevel):
             else:
                 q["id"] = int(self._id_value)
 
-        # Handle type-specific data
         if qtype == "true_false":
             q["correct_answer"] = self.tf_var.get() == "true"
             q["options"] = []
         else:
-            options = [var.get().strip() for _, var, _ in self.option_entries if var.get().strip()]
+            options = [var.get().strip() for _, var, _, _, _, _ in self.option_entries if var.get().strip()]
             if len(options) < 2:
                 messagebox.showwarning("Ошибка", "Добавьте минимум 2 варианта ответа")
                 return
@@ -716,15 +778,17 @@ class QuestionEditDialog(tk.Toplevel):
 
             if qtype == "single_choice":
                 val = self.answer_single_var.get()
-                if val == -1:
-                    messagebox.showwarning("Ошибка", "Выберите правильный ответ")
+                if val < 0 or val >= len(options):
+                    messagebox.showwarning("Ошибка", "Отметьте правильный ответ (нажмите на кружок ○)")
                     return
                 q["correct_answer"] = int(val)
 
             elif qtype == "multiple_choice":
-                selected = [i for i, v in self.answer_multi_vars.items() if v.get()]
+                selected = [i for i, (row, var, orig, marker, entry, edit_btn)
+                           in enumerate(self.option_entries)
+                           if self.answer_multi_vars.get(i, tk.BooleanVar(value=False)).get()]
                 if not selected:
-                    messagebox.showwarning("Ошибка", "Выберите хотя бы один правильный ответ")
+                    messagebox.showwarning("Ошибка", "Отметьте хотя бы один правильный ответ")
                     return
                 q["correct_answer"] = sorted(selected)
 
@@ -732,7 +796,6 @@ class QuestionEditDialog(tk.Toplevel):
                 if not hasattr(self, 'order_listbox') or self.order_listbox.size() < 2:
                     messagebox.showwarning("Ошибка", "Нужно минимум 2 варианта для сортировки")
                     return
-                # Extract the original indices from the listbox order
                 order = []
                 options_text = q["options"]
                 for i in range(self.order_listbox.size()):

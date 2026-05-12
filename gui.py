@@ -9,7 +9,7 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
-from tkinter import Tk, messagebox
+from tkinter import Tk, messagebox, PhotoImage
 
 from _utils import get_base_path, get_output_path
 
