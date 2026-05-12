@@ -575,67 +575,56 @@ class TestModeWindow(tk.Toplevel):
         if saved is not None:
             var.set(int(saved))
 
-        def make_select(idx, circle, inner, outer, label):
-            def on_click(e):
-                var.set(idx)
-                # Reset all
-                for child in parent.winfo_children():
-                    for sub in child.winfo_children():
-                        if isinstance(sub, tk.Frame):
-                            sub.configure(bg=Colors.CARD_BG)
-                            if sub.master:
-                                sub.master.configure(bg=Colors.BORDER_LIGHT)
-                        for gc in sub.winfo_children():
-                            if isinstance(gc, tk.Label):
-                                if hasattr(gc, 'is_circle') and gc.is_circle:
-                                    gc.configure(text="○", fg=Colors.TEXT_SECONDARY)
-                # Activate this
-                circle.configure(text="●", fg=Colors.PRIMARY)
-                inner.configure(bg=Colors.PRIMARY_BG)
-                outer.configure(bg=Colors.PRIMARY)
-            return on_click
-
         for i, option in enumerate(options):
-            outer = tk.Frame(parent, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
-            outer.pack(fill=tk.X, pady=Spacing.XS)
-
-            inner = tk.Frame(outer, bg=Colors.CARD_BG, bd=0, highlightthickness=0, cursor="hand2")
-            inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
+            is_sel = saved is not None and i == int(saved)
+            row = tk.Frame(parent, bg=Colors.PRIMARY_BG if is_sel else Colors.CARD_BG,
+                           cursor="hand2")
+            row.pack(fill=tk.X, pady=Spacing.XS)
 
             circle = tk.Label(
-                inner,
-                text="●" if saved is not None and i == int(saved) else "○",
+                row,
+                text="●" if is_sel else "○",
                 font=("Segoe UI", 14, "bold"),
-                bg=inner.cget('bg'),
-                fg=Colors.PRIMARY if (saved is not None and i == int(saved)) else Colors.TEXT_SECONDARY
+                bg=row.cget('bg'),
+                fg=Colors.PRIMARY if is_sel else Colors.TEXT_SECONDARY
             )
             circle.is_circle = True
             circle.pack(side=tk.LEFT, padx=(Spacing.LG, 0), pady=Spacing.MD)
 
             text_label = tk.Label(
-                inner,
+                row,
                 text=option,
                 font=Fonts.BODY_LARGE,
-                bg=inner.cget('bg'),
-                fg=Colors.TEXT_PRIMARY,
+                bg=row.cget('bg'),
+                fg=Colors.PRIMARY if is_sel else Colors.TEXT_PRIMARY,
                 wraplength=750,
                 justify=tk.LEFT,
                 anchor=tk.W
             )
             text_label.pack(side=tk.LEFT, padx=Spacing.MD, pady=Spacing.MD, fill=tk.X, expand=True)
 
-            if saved is not None and i == int(saved):
-                inner.configure(bg=Colors.PRIMARY_BG)
-                outer.configure(bg=Colors.PRIMARY)
+            def make_click(idx=i, rw=row, circ=circle, txt=text_label):
+                def on_click(e):
+                    var.set(idx)
+                    for child in parent.winfo_children():
+                        child.configure(bg=Colors.CARD_BG)
+                        for sub in child.winfo_children():
+                            if isinstance(sub, tk.Label) and getattr(sub, 'is_circle', False):
+                                sub.configure(text="○", fg=Colors.TEXT_SECONDARY, bg=Colors.CARD_BG)
+                            elif isinstance(sub, tk.Label):
+                                sub.configure(fg=Colors.TEXT_PRIMARY, bg=Colors.CARD_BG)
+                    circ.configure(text="●", fg=Colors.PRIMARY, bg=Colors.PRIMARY_BG)
+                    txt.configure(fg=Colors.PRIMARY, bg=Colors.PRIMARY_BG)
+                    rw.configure(bg=Colors.PRIMARY_BG)
+                return on_click
 
-            callback = make_select(i, circle, inner, outer, text_label)
-            for w in (inner, circle, text_label):
-                w.bind("<Button-1>", callback)
-                w.bind("<Enter>", lambda e, inn=inner:
-                       inn.configure(bg=Colors.SURFACE)
-                       if var.get() != i else None)
-                w.bind("<Leave>", lambda e, inn=inner:
-                       inn.configure(bg=Colors.PRIMARY_BG if var.get() == i else Colors.CARD_BG))
+            cb = make_click()
+            for w in (row, circle, text_label):
+                w.bind("<Button-1>", cb)
+                w.bind("<Enter>", lambda e, r=row, idx=i: r.configure(bg=Colors.SURFACE)
+                       if var.get() != idx else None)
+                w.bind("<Leave>", lambda e, r=row, idx=i: r.configure(
+                       bg=Colors.PRIMARY_BG if var.get() == idx else Colors.CARD_BG))
 
         parent.var = var
 
@@ -647,42 +636,40 @@ class TestModeWindow(tk.Toplevel):
 
         vars_list = []
         for i, option in enumerate(options):
-            var = tk.BooleanVar(value=str(i) in saved_answers)
-            outer = tk.Frame(parent, bg=Colors.PRIMARY if str(i) in saved_answers
-                             else Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
-            outer.pack(fill=tk.X, pady=Spacing.XS)
+            is_sel = str(i) in saved_answers
+            var = tk.BooleanVar(value=is_sel)
+            row = tk.Frame(parent, bg=Colors.PRIMARY_BG if is_sel else Colors.CARD_BG,
+                           cursor="hand2")
+            row.pack(fill=tk.X, pady=Spacing.XS)
 
-            inner = tk.Frame(outer, bg=Colors.PRIMARY_BG if str(i) in saved_answers
-                             else Colors.CARD_BG, bd=0, highlightthickness=0, cursor="hand2")
-            inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
-
-            selected = str(i) in saved_answers
-            cb = "☑" if selected else "☐"
+            cb_char = "☑" if is_sel else "☐"
             lbl = tk.Label(
-                inner,
-                text=f"{cb}  {option}",
+                row,
+                text=f"{cb_char}  {option}",
                 font=Fonts.BODY_LARGE,
-                bg=inner.cget('bg'),
-                fg=Colors.PRIMARY if selected else Colors.TEXT_PRIMARY,
+                bg=row.cget('bg'),
+                fg=Colors.PRIMARY if is_sel else Colors.TEXT_PRIMARY,
                 wraplength=750,
                 justify=tk.LEFT,
                 anchor=tk.W
             )
             lbl.pack(padx=Spacing.LG, pady=Spacing.MD, fill=tk.X)
 
-            def toggle(e, idx=i, v=var, label=lbl, inn=inner, out=outer, opts=options):
+            def toggle(e, idx=i, v=var, label=lbl, rw=row, opts=options):
                 v.set(not v.get())
                 if v.get():
                     label.configure(text=f"☑  {opts[idx]}", bg=Colors.PRIMARY_BG, fg=Colors.PRIMARY)
-                    inn.configure(bg=Colors.PRIMARY_BG)
-                    out.configure(bg=Colors.PRIMARY)
+                    rw.configure(bg=Colors.PRIMARY_BG)
                 else:
                     label.configure(text=f"☐  {opts[idx]}", bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY)
-                    inn.configure(bg=Colors.CARD_BG)
-                    out.configure(bg=Colors.BORDER_LIGHT)
+                    rw.configure(bg=Colors.CARD_BG)
 
-            for w in (inner, lbl):
+            for w in (row, lbl):
                 w.bind("<Button-1>", toggle)
+                w.bind("<Enter>", lambda e, r=row: r.configure(bg=Colors.SURFACE)
+                       if not var.get() else None)
+                w.bind("<Leave>", lambda e, r=row: r.configure(
+                       bg=Colors.PRIMARY_BG if var.get() else Colors.CARD_BG))
 
             vars_list.append((str(i), var))
 
@@ -697,34 +684,92 @@ class TestModeWindow(tk.Toplevel):
         content_frame = tk.Frame(parent, bg=Colors.CARD_BG)
         content_frame.pack(fill=tk.BOTH, expand=True)
 
-        list_frame = tk.Frame(content_frame, bg=Colors.CARD_BG)
-        list_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        # Text widget — main area with wrapping
+        text_frame = tk.Frame(content_frame, bg=Colors.CARD_BG)
+        text_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        scrollbar = ttk.Scrollbar(list_frame)
+        scrollbar = ttk.Scrollbar(text_frame)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        listbox = tk.Listbox(
-            list_frame,
+        text_widget = tk.Text(
+            text_frame,
             font=Fonts.BODY_LARGE,
             yscrollcommand=scrollbar.set,
             bg=Colors.CARD_BG,
             fg=Colors.TEXT_PRIMARY,
-            selectbackground=Colors.PRIMARY_BG,
-            selectforeground=Colors.PRIMARY,
-            activestyle='none',
-            height=10,
+            relief=tk.FLAT,
             borderwidth=0,
             highlightthickness=0,
-            relief=tk.FLAT
+            wrap=tk.WORD,
+            state=tk.NORMAL,
+            cursor="hand2",
+            padx=Spacing.SM,
+            pady=Spacing.SM
         )
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.config(command=listbox.yview)
+        text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=text_widget.yview)
 
         for idx in saved_order:
-            listbox.insert(tk.END, f"  {idx + 1}. {options[idx]}")
+            text_widget.insert(tk.END, f"  {saved_order.index(idx) + 1}. {options[idx]}\n")
 
+        text_widget.tag_configure("selected", background=Colors.PRIMARY_BG)
+        text_widget.tag_configure("hover", background=Colors.SIDEBAR_HOVER)
+        text_widget.selected_index = -1
+
+        # Block keyboard input so the widget stays NORMAL (tags render)
+        text_widget.bind("<Key>", lambda e: "break")
+
+        # Click to select a line
+        def _on_ordering_click(event, tw=text_widget, order=saved_order):
+            click_idx = tw.index(f"@{event.x},{event.y}")
+            line = int(click_idx.split(".")[0]) - 1
+            if 0 <= line < len(order):
+                tw.tag_remove("selected", "1.0", tk.END)
+                start = f"{line + 1}.0"
+                end = f"{line + 2}.0" if line + 1 < len(order) else tk.END
+                tw.tag_add("selected", start, end)
+                tw.selected_index = line
+            return "break"
+
+        text_widget.bind("<Button-1>", _on_ordering_click)
+
+        # Hover highlight on option lines
+        def _on_ordering_motion(event, tw=text_widget, order=saved_order):
+            tw.tag_remove("hover", "1.0", tk.END)
+            click_idx = tw.index(f"@{event.x},{event.y}")
+            line = int(click_idx.split(".")[0]) - 1
+            if 0 <= line < len(order) and line != getattr(tw, 'selected_index', -1):
+                start = f"{line + 1}.0"
+                end = f"{line + 2}.0" if line + 1 < len(order) else tk.END
+                tw.tag_add("hover", start, end)
+
+        def _on_ordering_leave(event, tw=text_widget):
+            tw.tag_remove("hover", "1.0", tk.END)
+
+        text_widget.bind("<Motion>", _on_ordering_motion)
+        text_widget.bind("<Leave>", _on_ordering_leave)
+
+        # Button frame — minimal width (only as wide as the buttons need)
         btn_frame = tk.Frame(content_frame, bg=Colors.CARD_BG)
         btn_frame.pack(side=tk.RIGHT, padx=(Spacing.LG, 0))
+
+        def _ordering_move_up():
+            idx = text_widget.selected_index
+            if idx is None or idx < 0 or idx >= len(saved_order):
+                return
+            if idx > 0:
+                saved_order[idx], saved_order[idx-1] = saved_order[idx-1], saved_order[idx]
+                text_widget.selected_index = idx - 1
+                self._refresh_ordering_text(text_widget, options, saved_order)
+
+        def _ordering_move_down():
+            idx = text_widget.selected_index
+            if idx is None or idx < 0 or idx >= len(saved_order):
+                return
+            if idx < len(saved_order) - 1:
+                saved_order[idx], saved_order[idx+1] = saved_order[idx+1], saved_order[idx]
+                text_widget.selected_index = idx + 1
+                self._refresh_ordering_text(text_widget, options, saved_order)
 
         tk.Button(
             btn_frame,
@@ -736,10 +781,10 @@ class TestModeWindow(tk.Toplevel):
             relief=tk.FLAT,
             cursor="hand2",
             bd=0,
-            padx=12,
+            padx=10,
             pady=6,
-            command=lambda: self.move_up(listbox, options, saved_order)
-        ).pack(pady=Spacing.XS, fill=tk.X)
+            command=_ordering_move_up
+        ).pack(pady=Spacing.XS)
 
         tk.Button(
             btn_frame,
@@ -751,40 +796,26 @@ class TestModeWindow(tk.Toplevel):
             relief=tk.FLAT,
             cursor="hand2",
             bd=0,
-            padx=12,
+            padx=10,
             pady=6,
-            command=lambda: self.move_down(listbox, options, saved_order)
-        ).pack(pady=Spacing.XS, fill=tk.X)
+            command=_ordering_move_down
+        ).pack(pady=Spacing.XS)
 
-        parent.listbox = listbox
+        parent.ordering_text = text_widget
         parent.options = options
         parent.order = saved_order
 
-    def move_up(self, listbox, options, order):
-        """Move selected item up in ordering."""
-        selection = listbox.curselection()
-        if not selection:
-            return
-        idx = selection[0]
-        if idx > 0:
-            order[idx], order[idx-1] = order[idx-1], order[idx]
-            listbox.delete(0, tk.END)
-            for i, oi in enumerate(order):
-                listbox.insert(tk.END, f"  {i + 1}. {options[oi]}")
-            listbox.selection_set(idx-1)
-
-    def move_down(self, listbox, options, order):
-        """Move selected item down in ordering."""
-        selection = listbox.curselection()
-        if not selection:
-            return
-        idx = selection[0]
-        if idx < len(order) - 1:
-            order[idx], order[idx+1] = order[idx+1], order[idx]
-            listbox.delete(0, tk.END)
-            for i, oi in enumerate(order):
-                listbox.insert(tk.END, f"  {i + 1}. {options[oi]}")
-            listbox.selection_set(idx+1)
+    def _refresh_ordering_text(self, text_widget, options, order):
+        """Refresh the ordering text widget content and restore selection."""
+        text_widget.delete("1.0", tk.END)
+        text_widget.tag_remove("hover", "1.0", tk.END)
+        for idx in order:
+            text_widget.insert(tk.END, f"  {order.index(idx) + 1}. {options[idx]}\n")
+        sel = getattr(text_widget, 'selected_index', -1)
+        if 0 <= sel < len(order):
+            start = f"{sel + 1}.0"
+            end = f"{sel + 2}.0" if sel + 1 < len(order) else tk.END
+            text_widget.tag_add("selected", start, end)
 
     def show_true_false(self, parent, question_data):
         """Display true/false question."""
@@ -792,54 +823,44 @@ class TestModeWindow(tk.Toplevel):
         var = tk.StringVar(value=saved if saved in ("true", "false") else "")
 
         for val, text in [("true", "Верно"), ("false", "Неверно")]:
-            selected = saved == val
-            outer = tk.Frame(parent, bg=Colors.PRIMARY if selected else Colors.BORDER_LIGHT,
-                             bd=0, highlightthickness=0)
-            outer.pack(fill=tk.X, pady=Spacing.XS)
+            is_sel = saved == val
+            row = tk.Frame(parent, bg=Colors.PRIMARY_BG if is_sel else Colors.CARD_BG,
+                           cursor="hand2")
+            row.pack(fill=tk.X, pady=Spacing.XS)
 
-            inner = tk.Frame(outer, bg=Colors.PRIMARY_BG if selected else Colors.CARD_BG,
-                             bd=0, highlightthickness=0, cursor="hand2")
-            inner.pack(fill=tk.BOTH, expand=True, padx=1, pady=1)
-
-            icon = "●" if selected else "○"
+            icon = "●" if is_sel else "○"
             lbl = tk.Label(
-                inner,
+                row,
                 text=f"{icon}  {text}",
                 font=Fonts.BODY_LARGE,
-                bg=inner.cget('bg'),
-                fg=Colors.PRIMARY if selected else Colors.TEXT_PRIMARY,
+                bg=row.cget('bg'),
+                fg=Colors.PRIMARY if is_sel else Colors.TEXT_PRIMARY,
                 anchor=tk.W
             )
             lbl.pack(padx=Spacing.LG, pady=Spacing.MD, fill=tk.X)
 
-            def make_toggle(v=val, txt=text, inn=inner, out=outer, label=lbl):
+            def make_toggle(v=val, txt=text, rw=row, label=lbl):
                 def on_click(e):
                     var.set(v)
-                    # Reset all siblings
-                    for sibling in parent.winfo_children():
-                        sib_outer = sibling
-                        for sib_inner in sib_outer.winfo_children():
-                            if isinstance(sib_inner, tk.Frame):
-                                sib_inner.configure(bg=Colors.CARD_BG)
-                                sib_outer.configure(bg=Colors.BORDER_LIGHT)
-                                for sib_label in sib_inner.winfo_children():
-                                    if isinstance(sib_label, tk.Label):
-                                        old_txt = sib_label.cget('text')
-                                        if old_txt.startswith("●"):
-                                            sib_label.configure(text="○ " + old_txt[2:],
-                                                                bg=Colors.CARD_BG,
-                                                                fg=Colors.TEXT_PRIMARY)
-                                        elif old_txt.startswith("○"):
-                                            pass  # already unchecked
-                    # Activate this
+                    for child in parent.winfo_children():
+                        child.configure(bg=Colors.CARD_BG)
+                        for sub in child.winfo_children():
+                            if isinstance(sub, tk.Label):
+                                old = sub.cget('text')
+                                if old.startswith("●"):
+                                    sub.configure(text="○ " + old[2:],
+                                                  bg=Colors.CARD_BG, fg=Colors.TEXT_PRIMARY)
                     label.configure(text=f"●  {txt}", bg=Colors.PRIMARY_BG, fg=Colors.PRIMARY)
-                    inn.configure(bg=Colors.PRIMARY_BG)
-                    out.configure(bg=Colors.PRIMARY)
+                    rw.configure(bg=Colors.PRIMARY_BG)
                 return on_click
 
             callback = make_toggle()
-            for w in (inner, lbl):
+            for w in (row, lbl):
                 w.bind("<Button-1>", callback)
+                w.bind("<Enter>", lambda e, r=row: r.configure(bg=Colors.SURFACE)
+                       if var.get() != val else None)
+                w.bind("<Leave>", lambda e, r=row: r.configure(
+                       bg=Colors.PRIMARY_BG if var.get() == val else Colors.CARD_BG))
 
         parent.var = var
 
