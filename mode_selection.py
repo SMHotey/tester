@@ -56,7 +56,7 @@ class ModeSelectionWindow(tk.Toplevel):
         self.on_scenario_test_mode = on_scenario_test_mode
 
         self.title("Система тестирования")
-        self.geometry("560x760")
+        self.geometry("560x720")
         self.resizable(False, False)
         self.configure(bg=Colors.BG)
 

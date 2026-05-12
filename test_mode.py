@@ -677,6 +677,9 @@ class TestModeWindow(tk.Toplevel):
 
     def show_ordering(self, parent, question_data):
         """Display ordering question with up/down buttons."""
+        # Resize parent to fill canvas viewport → no outer scrollbar
+        canvas = parent.master  # opt_canvas
+        canvas.bind("<Configure>", lambda e, p=parent: p.config(height=e.height // 2), add="+")
         options = question_data.get("options", [])
         question_id = question_data.get("id")
         saved_order = self.user_answers.get(question_id, list(range(len(options))))
@@ -749,9 +752,9 @@ class TestModeWindow(tk.Toplevel):
         text_widget.bind("<Motion>", _on_ordering_motion)
         text_widget.bind("<Leave>", _on_ordering_leave)
 
-        # Button frame — minimal width (only as wide as the buttons need)
+        # Button frame — full height, buttons at the top
         btn_frame = tk.Frame(content_frame, bg=Colors.CARD_BG)
-        btn_frame.pack(side=tk.RIGHT, padx=(Spacing.LG, 0))
+        btn_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=(Spacing.LG, 0))
 
         def _ordering_move_up():
             idx = text_widget.selected_index
