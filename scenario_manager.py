@@ -221,4 +221,4 @@ class ScenarioManager:
                 if self._save_raw({"test_scenarios": scenarios}):
                     return True, f"Вопрос {question_id} удалён из сценария {scenario_id}"
                 return False, "Ошибка сохранения"
-        return False, f"Сценарий {scenario_id} не найден"}
+        return False, f"Сценарий {scenario_id} не найден"
