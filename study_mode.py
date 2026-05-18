@@ -7,6 +7,7 @@
 
 import tkinter as tk
 from tkinter import ttk
+import re
 
 from style_config import Colors, Fonts, Spacing
 
@@ -167,8 +168,6 @@ class StudyModeWindow(tk.Toplevel):
             highlightthickness=0,
             cursor="hand2"
         )
-        # Right external padding = Spacing.SM (8px) so distance from text to scrollbar
-        # equals distance from text to left edge of card (Spacing.SM + Spacing.LG)
         self.process_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, Spacing.SM))
         scrollbar.config(command=self.process_text.yview)
 
@@ -266,6 +265,7 @@ class StudyModeWindow(tk.Toplevel):
         self.steps_text.tag_config("bullet", lmargin1=Spacing.LG, lmargin2=Spacing.LG + 10, spacing1=Spacing.XS)
         self.steps_text.tag_config("indent", lmargin1=Spacing.LG + 20, lmargin2=Spacing.LG + 30, spacing1=Spacing.XS)
         self.steps_text.tag_config("subindent", lmargin1=Spacing.LG + 40, lmargin2=Spacing.LG + 50, spacing1=Spacing.XS)
+        self.steps_text.tag_config("subsubindent", lmargin1=Spacing.LG + 60, lmargin2=Spacing.LG + 70, spacing1=Spacing.XS)
         self.steps_text.tag_config("paragraph", spacing1=Spacing.SM)
         self.steps_text.tag_config("example", foreground="#666666", lmargin1=Spacing.LG, lmargin2=Spacing.LG + 10)
 
@@ -368,7 +368,6 @@ class StudyModeWindow(tk.Toplevel):
             if item.get("type") == "subsection":
                 title = item.get("title", "")
                 # Extract subsection number (e.g., "2.1. Запрос счёта..." -> "2.1")
-                import re
                 match = re.search(r'(\d+\.\d+)', title)
                 if match:
                     subsection_id = match.group(1)
@@ -415,70 +414,148 @@ class StudyModeWindow(tk.Toplevel):
 
         self.steps_text.config(state=tk.DISABLED)
 
-    def _render_content(self, content_items):
-        """Рекурсивный рендеринг содержимого."""
+    def _render_content(self, content_items, level=0):
+        """
+        Рекурсивный рендеринг содержимого.
+        level: уровень вложенности (0 - корневой, 1 - внутри subsection, и т.д.)
+        """
         for item in content_items:
-            item_type = item.get("type", "")
+            self._render_block(item, level)
 
-            if item_type == "paragraph":
-                text = item.get("text", "")
-                self.steps_text.insert(tk.END, text + "\n", "paragraph")
+    def _render_block(self, block, level=0):
+        """
+        Универсальный рендеринг одного блока (может быть paragraph, subsection, list, и т.д.)
+        """
+        block_type = block.get("type", "")
+        indent_tag = self._get_indent_tag(level)
 
-            elif item_type == "subsection":
-                title = item.get("title", "")
+        # --- Базовые типы ---
+        if block_type == "paragraph":
+            text = block.get("text", "")
+            self.steps_text.insert(tk.END, text + "\n", "paragraph")
+
+        elif block_type == "subsection":
+            title = block.get("title", "")
+            self.steps_text.insert(tk.END, f"\n{title}\n", "subheading")
+            nested_content = block.get("content", [])
+            self._render_content(nested_content, level + 1)
+
+        elif block_type == "example":
+            text = block.get("text", "")
+            self.steps_text.insert(tk.END, f"\nПример:\n", "subheading")
+            self.steps_text.insert(tk.END, text + "\n", "example")
+
+        elif block_type == "warning":
+            title = block.get("title", "")
+            if title:
+                self.steps_text.insert(tk.END, f"\n{title}\n", "warning")
+            items = block.get("items", [])
+            for warn_item in items:
+                self.steps_text.insert(tk.END, f"⚠ {warn_item}\n", "warning")
+
+        # --- Списки ---
+        elif block_type == "ordered_list":
+            title = block.get("title", "")
+            if title:
                 self.steps_text.insert(tk.END, f"\n{title}\n", "subheading")
-                nested_content = item.get("content", [])
-                self._render_content(nested_content)
+            items = block.get("items", [])
+            # Счётчик для нумерации пунктов списка
+            list_idx = 1
+            for list_item in items:
+                # Если элемент списка — это НЕ обычный пункт, а целый блок с type
+                if isinstance(list_item, dict) and "type" in list_item:
+                    # Визуально отступ для такого блока (как будто это отдельный пункт)
+                    # Но сначала выведем номер пункта, а затем — содержимое блока
+                    self.steps_text.insert(tk.END, f"{list_idx}. ", indent_tag)
+                    # Сохраняем позицию перед вставкой содержимого блока
+                    # и вставляем блок с увеличенным отступом
+                    self._render_block(list_item, level + 1)
+                    # После блока добавим перевод строки, если его нет
+                    self.steps_text.insert(tk.END, "\n")
+                    list_idx += 1
+                else:
+                    # Обычный пункт списка (строка или объект с text/details/subitems)
+                    self._render_list_item(list_item, f"{list_idx}. ", indent_tag, level)
+                    list_idx += 1
 
-            elif item_type == "ordered_list":
-                title = item.get("title", "")
-                if title:
-                    self.steps_text.insert(tk.END, f"\n{title}\n", "subheading")
-                items = item.get("items", [])
-                for idx, list_item in enumerate(items, 1):
-                    self._render_list_item(list_item, f"{idx}. ", "bullet")
+        elif block_type == "unordered_list":
+            title = block.get("title", "")
+            if title:
+                self.steps_text.insert(tk.END, f"\n{title}\n", "subheading")
+            items = block.get("items", [])
+            for list_item in items:
+                if isinstance(list_item, dict) and "type" in list_item:
+                    # Вложенный блок в неупорядоченном списке
+                    self.steps_text.insert(tk.END, "• ", indent_tag)
+                    self._render_block(list_item, level + 1)
+                    self.steps_text.insert(tk.END, "\n")
+                else:
+                    self._render_list_item(list_item, "• ", indent_tag, level)
 
-            elif item_type == "unordered_list":
-                title = item.get("title", "")
-                if title:
-                    self.steps_text.insert(tk.END, f"\n{title}\n", "subheading")
-                items = item.get("items", [])
-                for list_item in items:
-                    self._render_list_item(list_item, "• ", "bullet")
+        # --- Если нет type — возможно, это просто словарь с text (как пункт списка без type) ---
+        elif isinstance(block, dict) and "text" in block:
+            # Такое может быть, если в JSON элемент списка задан как {"text": "..."} без type
+            self._render_list_item(block, "", indent_tag, level)
 
-            elif item_type == "example":
-                text = item.get("text", "")
-                self.steps_text.insert(tk.END, f"\nПример:\n", "subheading")
-                self.steps_text.insert(tk.END, text + "\n", "example")
+        # Для строк (прямая вставка без маркера) — не должно встречаться на верхнем уровне, но на всякий случай
+        elif isinstance(block, str):
+            self.steps_text.insert(tk.END, block + "\n", indent_tag)
 
-    def _render_list_item(self, item, prefix, tag):
-        """Рендеринг элемента списка (может быть строкой или объектом)."""
+    def _render_list_item(self, item, prefix, tag, level=0):
+        """
+        Рендеринг элемента списка, который НЕ является самостоятельным блоком,
+        а именно пункт с возможными subitems и details.
+        """
+        indent_tag = self._get_indent_tag(level)
+
         if isinstance(item, str):
-            self.steps_text.insert(tk.END, f"{prefix}{item}\n", tag)
+            self.steps_text.insert(tk.END, f"{prefix}{item}\n", indent_tag)
         elif isinstance(item, dict):
             text = item.get("text", "")
-            self.steps_text.insert(tk.END, f"{prefix}{text}\n", tag)
+            self.steps_text.insert(tk.END, f"{prefix}{text}\n", indent_tag)
 
-            # Обработка вложенных элементов
+            # Обработка вложенных subitems (простой массив строк/словарей)
             subitems = item.get("subitems", [])
             for subitem in subitems:
-                if isinstance(subitem, str):
-                    self.steps_text.insert(tk.END, f"    • {subitem}\n", "subindent")
-                elif isinstance(subitem, dict):
-                    subtext = subitem.get("text", "")
-                    self.steps_text.insert(tk.END, f"    • {subtext}\n", "subindent")
-                    # Рекурсивно обрабатываем вложенность
-                    nested_subitems = subitem.get("subitems", [])
-                    for nested in nested_subitems:
-                        if isinstance(nested, str):
-                            self.steps_text.insert(tk.END, f"        - {nested}\n", "subindent")
-                        elif isinstance(nested, dict):
-                            self.steps_text.insert(tk.END, f"        - {nested.get('text', '')}\n", "subindent")
+                self._render_nested_item(subitem, level + 1)
 
-            # Обработка details (для ordered_list)
+            # Обработка details
             details = item.get("details", "")
             if details:
-                self.steps_text.insert(tk.END, f"    {details}\n", "subindent")
+                details_tag = self._get_indent_tag(level + 1)
+                self.steps_text.insert(tk.END, f"    {details}\n", details_tag)
+
+    def _render_nested_item(self, item, level):
+        """Рендеринг subitems (подпунктов) — тут могут быть и строки, и целые блоки."""
+        indent_tag = self._get_indent_tag(level)
+
+        if isinstance(item, str):
+            self.steps_text.insert(tk.END, f"    • {item}\n", indent_tag)
+        elif isinstance(item, dict):
+            # Если у subitem есть type — это целый блок (например, unordered_list внутри subitems)
+            if "type" in item:
+                # Визуально обозначим вложенный блок маркером "•" и затем отрендерим блок
+                self.steps_text.insert(tk.END, "    • ", indent_tag)
+                self._render_block(item, level + 1)
+                self.steps_text.insert(tk.END, "\n")
+            else:
+                # Обычный словарь с text (и, возможно, своими subitems)
+                text = item.get("text", "")
+                self.steps_text.insert(tk.END, f"    • {text}\n", indent_tag)
+                deeper = item.get("subitems", [])
+                for d in deeper:
+                    self._render_nested_item(d, level + 1)
+
+    def _get_indent_tag(self, level):
+        """Возвращает тег отступа в зависимости от уровня вложенности."""
+        if level == 0:
+            return "bullet"
+        elif level == 1:
+            return "indent"
+        elif level == 2:
+            return "subindent"
+        else:
+            return "subsubindent"
 
     def close_window(self):
         """Закрытие окна."""
