@@ -5,6 +5,7 @@ Modernized mode selection window with card-based layout.
 """
 
 import tkinter as tk
+from tkinter import messagebox
 from style_config import Colors, Fonts, Spacing
 
 
@@ -53,6 +54,7 @@ class ModeSelectionWindow(tk.Toplevel):
             "color": Colors.PRIMARY_DARK,
             "color_light": Colors.PRIMARY_BG,
             "attr": "on_edit_questions",
+            "protected": True,
         },
         {
             "title": "Редактировать сценарии",
@@ -61,6 +63,7 @@ class ModeSelectionWindow(tk.Toplevel):
             "color": Colors.SECONDARY_DARK,
             "color_light": Colors.SECONDARY_BG,
             "attr": "on_edit_scenarios",
+            "protected": True,
         },
     ]
 
@@ -76,7 +79,7 @@ class ModeSelectionWindow(tk.Toplevel):
         self.on_edit_scenarios = on_edit_scenarios
 
         self.title("Система тестирования")
-        self.geometry("560x800")
+        self.geometry("560x920")
         self.resizable(False, False)
         self.configure(bg=Colors.BG)
 
@@ -98,6 +101,83 @@ class ModeSelectionWindow(tk.Toplevel):
     def quit_app(self):
         """Quit the application."""
         self.master.destroy()
+
+    def _check_password(self):
+        """Show password dialog. Returns True if correct."""
+        dialog = tk.Toplevel(self)
+        dialog.title("Подтверждение")
+        dialog.configure(bg=Colors.CARD_BG)
+        dialog.resizable(False, False)
+
+        w, h = 380, 200
+        x = self.winfo_rootx() + (self.winfo_width() - w) // 2
+        y = self.winfo_rooty() + (self.winfo_height() - h) // 2
+        dialog.geometry(f"{w}x{h}+{x}+{y}")
+        dialog.transient(self)
+        dialog.grab_set()
+
+        result = {"ok": False}
+
+        tk.Label(
+            dialog,
+            text="Введите пароль для доступа:",
+            font=Fonts.BODY,
+            bg=Colors.CARD_BG,
+            fg=Colors.TEXT_PRIMARY,
+        ).pack(pady=(Spacing.XXL, Spacing.MD), padx=Spacing.XL)
+
+        frame = tk.Frame(dialog, bg=Colors.BORDER_LIGHT, bd=0, highlightthickness=0)
+        frame.pack(fill=tk.X, padx=Spacing.XL, pady=(0, Spacing.LG))
+
+        entry = tk.Entry(
+            frame,
+            font=Fonts.BODY_LARGE,
+            bg=Colors.CARD_BG,
+            fg=Colors.TEXT_PRIMARY,
+            relief=tk.FLAT, bd=0,
+            show="*",
+            insertbackground=Colors.PRIMARY,
+        )
+        entry.pack(fill=tk.X, padx=Spacing.MD, pady=Spacing.SM)
+        entry.focus_set()
+        entry.bind("<FocusIn>", lambda e: frame.configure(bg=Colors.PRIMARY))
+        entry.bind("<FocusOut>", lambda e: frame.configure(bg=Colors.BORDER_LIGHT))
+
+        def on_ok():
+            if entry.get() == "admin321":
+                result["ok"] = True
+                dialog.destroy()
+            else:
+                messagebox.showerror("Ошибка", "Неверный пароль", parent=dialog)
+
+        def on_cancel():
+            dialog.destroy()
+
+        btn_frame = tk.Frame(dialog, bg=Colors.CARD_BG)
+        btn_frame.pack(fill=tk.X, padx=Spacing.XL)
+
+        tk.Button(
+            btn_frame, text="Отмена", font=("Segoe UI", 10),
+            bg=Colors.SURFACE, fg=Colors.TEXT_PRIMARY,
+            activebackground=Colors.BORDER_LIGHT, relief=tk.FLAT,
+            cursor="hand2", bd=0, padx=16, pady=6,
+            command=on_cancel,
+        ).pack(side=tk.RIGHT, padx=(Spacing.SM, 0))
+
+        tk.Button(
+            btn_frame, text="OK", font=("Segoe UI", 10, "bold"),
+            bg=Colors.PRIMARY, fg=Colors.TEXT_ON_PRIMARY,
+            activebackground=Colors.PRIMARY_LIGHT, relief=tk.FLAT,
+            cursor="hand2", bd=0, padx=16, pady=6,
+            command=on_ok,
+        ).pack(side=tk.RIGHT)
+
+        entry.bind("<Return>", lambda e: on_ok())
+        dialog.bind("<Escape>", lambda e: on_cancel())
+        dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+
+        self.wait_window(dialog)
+        return result["ok"]
 
     def create_widgets(self):
         """Create all window widgets with modern design."""
@@ -231,6 +311,12 @@ class ModeSelectionWindow(tk.Toplevel):
 
         # ─── Hover & Click Effects ───
         callback = getattr(self, mode["attr"])
+        protected = mode.get("protected", False)
+
+        def on_click(e=None):
+            if protected and not self._check_password():
+                return
+            callback()
 
         def on_enter(e, inner=card_inner, hl_bg=mode["color_light"]):
             inner.configure(bg=hl_bg)
@@ -255,9 +341,6 @@ class ModeSelectionWindow(tk.Toplevel):
                             if isinstance(subsub, tk.Frame):
                                 subsub.configure(bg=Colors.CARD_BG)
             arrow.configure(fg=Colors.BORDER)
-
-        def on_click(e=None):
-            callback()
 
         # Bind events to all relevant widgets for full-area click
         for widget in [card_inner, content, top_row, text_frame, card_title, card_desc, icon_circle, icon_label]:
