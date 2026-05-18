@@ -18,5 +18,8 @@ dist/test_results.json
 # Results export
 results/
 
+# Build output
+dist/
+
 # IDE
 .idea/

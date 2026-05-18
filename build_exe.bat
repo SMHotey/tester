@@ -18,17 +18,16 @@ echo Building single exe...
   --add-data="%SCRIPT_DIR%reglament.json;." ^
   --add-data="%SCRIPT_DIR%test_scenarios.json;." ^
   --add-data="%SCRIPT_DIR%app_icon.png;." ^
-  --add-data="%SCRIPT_DIR%app_icon.ico;." ^
   --add-data="%SCRIPT_DIR%style_config.py;." ^
   --add-data="%SCRIPT_DIR%_utils.py;." ^
   --add-data="%SCRIPT_DIR%pdf_generator.py;." ^
-  --name="DesktopTestApp" ^
+  --name="tester 1.1" ^
   --clean ^
   "%ENTRY_POINT%"
 
 echo.
-if exist "%SCRIPT_DIR%dist\DesktopTestApp.exe" (
-  echo Build successful! Exe location: %SCRIPT_DIR%dist\DesktopTestApp.exe
+if exist "%SCRIPT_DIR%dist\tester 1.1.exe" (
+  echo Build successful! Exe location: "%SCRIPT_DIR%dist\tester 1.1.exe"
 ) else (
   echo Build failed! Check the output above.
 )
