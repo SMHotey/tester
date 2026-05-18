@@ -194,3 +194,145 @@ class QuestionBankManager:
         """Return the number of questions in the currently active bank."""
         questions = self.load_questions()
         return len(questions) if isinstance(questions, list) else 0
+
+    # ─── Active bank helpers ──────────────────────────────────────────
+
+    def get_active_bank_filename(self):
+        """Return the filename of the active bank, or None."""
+        data = self._read_index()
+        return data.get("active")
+
+    def ensure_active_bank_exists(self):
+        """
+        Ensure an active bank exists.
+        If none, create one from bundled questions.json named 'Мои вопросы'.
+        Returns (filename: str, created: bool).
+        """
+        filename = self.get_active_bank_filename()
+        if filename:
+            bank_path = self.banks_dir / filename
+            if bank_path.exists():
+                return filename, False
+
+        # Create a new bank from bundled questions
+        bundled_path = get_base_path() / "questions.json"
+        if not bundled_path.exists():
+            return None, False
+
+        try:
+            with open(bundled_path, 'r', encoding='utf-8') as f:
+                questions = json.load(f)
+        except Exception:
+            return None, False
+
+        file_id = uuid.uuid4().hex[:12]
+        filename = f"{file_id}.json"
+        dest_path = self.banks_dir / filename
+
+        with open(dest_path, 'w', encoding='utf-8') as f:
+            json.dump(questions, f, ensure_ascii=False, indent=2)
+
+        data = self._read_index()
+        data["banks"].append({
+            "name": "Мои вопросы",
+            "file": filename,
+            "count": len(questions),
+        })
+        data["active"] = filename
+        self._write_index(data)
+        return filename, True
+
+    def load_questions_from_bank(self, filename):
+        """Load questions from a specific bank file."""
+        bank_path = self.banks_dir / filename
+        if not bank_path.exists():
+            return []
+        try:
+            with open(bank_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return []
+
+    def save_questions_to_bank(self, filename, questions):
+        """
+        Save questions to a bank file and update index count.
+        Returns success: bool.
+        """
+        bank_path = self.banks_dir / filename
+        try:
+            with open(bank_path, 'w', encoding='utf-8') as f:
+                json.dump(questions, f, ensure_ascii=False, indent=2)
+            # Update count in index
+            data = self._read_index()
+            for b in data.get("banks", []):
+                if b["file"] == filename:
+                    b["count"] = len(questions)
+                    break
+            self._write_index(data)
+            return True
+        except Exception:
+            return False
+
+    def renumber_questions(self, questions):
+        """Renumber question IDs sequentially starting from 1. Returns new list."""
+        for i, q in enumerate(questions):
+            q["id"] = i + 1
+        return questions
+
+    def add_question_to_bank(self, filename, question_dict):
+        """
+        Add a question to a bank file. Auto-assigns ID.
+        Returns (success: bool, message: str).
+        """
+        questions = self.load_questions_from_bank(filename)
+        if not questions and not isinstance(questions, list):
+            return False, "Не удалось загрузить банк"
+
+        # Assign new ID
+        max_id = max((q.get("id", 0) for q in questions), default=0)
+        question_dict["id"] = max_id + 1
+        questions.append(question_dict)
+
+        if self.save_questions_to_bank(filename, questions):
+            return True, f"Вопрос #{question_dict['id']} добавлен"
+        return False, "Ошибка сохранения"
+
+    def update_question_in_bank(self, filename, question_id, new_data):
+        """
+        Update a question in a bank by ID.
+        Returns (success: bool, message: str).
+        """
+        questions = self.load_questions_from_bank(filename)
+        if not questions:
+            return False, "Не удалось загрузить банк"
+
+        for i, q in enumerate(questions):
+            if q.get("id") == question_id:
+                # Preserve the ID, update everything else
+                new_data["id"] = question_id
+                questions[i] = new_data
+                if self.save_questions_to_bank(filename, questions):
+                    return True, f"Вопрос #{question_id} обновлён"
+                return False, "Ошибка сохранения"
+
+        return False, f"Вопрос #{question_id} не найден"
+
+    def delete_question_from_bank(self, filename, question_id):
+        """
+        Delete a question from a bank by ID and renumber.
+        Returns (success: bool, message: str).
+        """
+        questions = self.load_questions_from_bank(filename)
+        if not questions:
+            return False, "Не удалось загрузить банк"
+
+        new_questions = [q for q in questions if q.get("id") != question_id]
+        if len(new_questions) == len(questions):
+            return False, f"Вопрос #{question_id} не найден"
+
+        # Renumber
+        self.renumber_questions(new_questions)
+
+        if self.save_questions_to_bank(filename, new_questions):
+            return True, f"Вопрос #{question_id} удалён, id перенумерованы"
+        return False, "Ошибка сохранения"

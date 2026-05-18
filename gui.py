@@ -20,6 +20,12 @@ from test_mode import TestModeWindow
 from scenario_test_mode import ScenarioTestModeWindow
 from results_viewer import ResultsViewerWindow
 
+# Import managers and editors
+from question_bank_manager import QuestionBankManager
+from scenario_manager import ScenarioManager
+from question_list_window import QuestionListWindow
+from scenario_editor_window import ScenarioEditorWindow
+
 
 
 class TestApp:
@@ -43,6 +49,11 @@ class TestApp:
         output_base = get_output_path()
         self.user_data_file = output_base / "user_data.json"
         self.results_file = output_base / "test_results.json"
+
+        # Managers for editable data
+        self.bank_manager = QuestionBankManager()
+        self.scenario_manager = ScenarioManager()
+
         self.load_user_data()
         self.load_reglament()
         self.load_test_questions()
@@ -81,25 +92,14 @@ class TestApp:
             self.reglament = []
 
     def load_test_questions(self):
-        """Load test questions from questions.json."""
-        try:
-            questions_path = get_base_path() / "questions.json"
-            with open(questions_path, 'r', encoding='utf-8') as f:
-                self.test_questions = json.load(f)
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load questions.json: {e}")
-            self.test_questions = []
+        """Load test questions via QuestionBankManager (prefers active bank)."""
+        self.test_questions = self.bank_manager.load_questions()
+        if not self.test_questions:
+            messagebox.showerror("Error", "Не удалось загрузить вопросы")
 
     def load_scenarios(self):
-        """Load test scenarios from test_scenarios.json."""
-        try:
-            scenarios_path = get_base_path() / "test_scenarios.json"
-            with open(scenarios_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                self.scenarios = data.get("test_scenarios", [])
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to load test_scenarios.json: {e}")
-            self.scenarios = []
+        """Load test scenarios via ScenarioManager (prefers user-edited scenarios)."""
+        self.scenarios = self.scenario_manager.load_scenarios()
 
     def save_test_result(self, result):
         """Save test result to JSON file."""
@@ -127,7 +127,45 @@ class TestApp:
             on_test_mode=self.show_test_mode,
             on_view_results=self.show_results_viewer,
             on_scenario_test_mode=self.show_scenario_test_mode,
+            on_edit_questions=self.show_question_editor,
+            on_edit_scenarios=self.show_scenario_editor,
         )
+
+    def show_question_editor(self):
+        """Show question editor window."""
+        if self.current_window:
+            self.current_window.destroy()
+
+        # Ensure there's an active bank to edit
+        filename, created = self.bank_manager.ensure_active_bank_exists()
+        bank_name = self.bank_manager.get_active_bank_name() or "Мои вопросы"
+        if not filename:
+            messagebox.showerror("Ошибка", "Не удалось создать банк вопросов")
+            self.show_mode_selection()
+            return
+
+        self.current_window = QuestionListWindow(
+            self.root,
+            self.bank_manager,
+            bank_filename=filename,
+            bank_name=bank_name,
+            on_back=self.show_mode_selection,
+            on_bank_changed=self._reload_test_questions,
+        )
+
+    def show_scenario_editor(self):
+        """Show scenario editor window."""
+        if self.current_window:
+            self.current_window.destroy()
+        self.current_window = ScenarioEditorWindow(
+            self.root,
+            self.scenario_manager,
+            on_back=self.show_mode_selection,
+        )
+
+    def _reload_test_questions(self):
+        """Reload test questions after bank changes."""
+        self.load_test_questions()
 
     def show_study_mode(self):
         """Show study mode window."""

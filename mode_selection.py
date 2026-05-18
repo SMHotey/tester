@@ -45,18 +45,38 @@ class ModeSelectionWindow(tk.Toplevel):
             "color_light": Colors.WARNING_BG,
             "attr": "on_view_results",
         },
+        # ─── Editing section ────────────────────────────────────────
+        {
+            "title": "Редактировать вопросы",
+            "description": "Добавление, изменение и удаление вопросов для тестирования",
+            "icon": "✏️",
+            "color": Colors.PRIMARY_DARK,
+            "color_light": Colors.PRIMARY_BG,
+            "attr": "on_edit_questions",
+        },
+        {
+            "title": "Редактировать сценарии",
+            "description": "Добавление, изменение и удаление сценариев и их вопросов",
+            "icon": "📝",
+            "color": Colors.SECONDARY_DARK,
+            "color_light": Colors.SECONDARY_BG,
+            "attr": "on_edit_scenarios",
+        },
     ]
 
     def __init__(self, parent, on_study_mode, on_test_mode, on_view_results,
-                 on_scenario_test_mode=None):
+                 on_scenario_test_mode=None, on_edit_questions=None,
+                 on_edit_scenarios=None):
         super().__init__(parent)
         self.on_study_mode = on_study_mode
         self.on_test_mode = on_test_mode
         self.on_view_results = on_view_results
         self.on_scenario_test_mode = on_scenario_test_mode
+        self.on_edit_questions = on_edit_questions
+        self.on_edit_scenarios = on_edit_scenarios
 
         self.title("Система тестирования")
-        self.geometry("560x720")
+        self.geometry("560x800")
         self.resizable(False, False)
         self.configure(bg=Colors.BG)
 
